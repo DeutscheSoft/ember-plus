@@ -207,27 +207,55 @@ export class EmberConnection {
     u8.set([0, 0x0e, 0x00, 0x01, 0xc0, 0x01, 0x02, 31, 0x02], 0);
     u8.set(new Uint8Array(buf), 9);
 
-    console.log('Send', tlv);
-
     this.send(u8.buffer);
   }
 
-  send_get_directory() {
+  send_get_directory(node) {
+    const list = [];
     const cmd = new emberCommand('getDirectory');
-    const collection = new emberRootElementCollection([cmd]);
-    const root = new emberRoot(collection);
 
+    if (node) {
+      console.log('Sending getDirectory for node %o', node);
+      const tmp = emberNode.from({
+        number: node.number,
+        children: new emberElementCollection([cmd]),
+      });
+      list.push(tmp);
+    } else {
+      console.log('Sending getDirectory for Root node');
+      list.push(cmd);
+    }
+    const collection = new emberRootElementCollection(list);
+    const root = new emberRoot(collection);
     this.send_ember(root.encode());
   }
 
   handle_message(data, pos) {
-    //console.log('message %o %o', data, pos);
-    while (pos < data.byteLength) {
-      let tlv;
-      [tlv, pos] = TLV.decode_from(data, pos);
-      console.log('Receive', tlv);
-      const root = emberRoot.decode(tlv);
-      console.log('root', root);
+    try {
+      while (pos < data.byteLength) {
+        let tlv;
+        [tlv, pos] = TLV.decode_from(data, pos);
+        const root = emberRoot.decode(tlv);
+
+        root.value.list.forEach((element) => {
+          if (element instanceof emberNode) {
+            console.log('Node:', element);
+            this.send_get_directory(element);
+          } else if (element instanceof emberParameter) {
+            console.log('Parameter:', element);
+          } else if (element instanceof emberQualifiedParameter) {
+            console.log('QualifiedParameter:', element);
+          } else if (element instanceof emberQualifiedNode) {
+            console.log('QualifiedNode:', element);
+          } else {
+            console.log('Unknown:', element);
+          }
+        });
+
+        //this.send_ember(root.encode());
+      }
+    } catch (error) {
+      console.error('Error in handle_message', error);
     }
   }
 
