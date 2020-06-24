@@ -9,9 +9,11 @@ async function testConnect(options) {
 }
 
 const options = {
-  host: '192.168.0.105',
-  port: 9000,
+  host: process.argv[2],
+  port: parseInt(process.argv[3]),
 };
+
+console.log('options', options);
 
 testConnect(options).then(
   () => {
