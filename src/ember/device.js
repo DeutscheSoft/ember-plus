@@ -19,8 +19,8 @@ export class Device {
   _createParameter(parent, element) {
     const parameter = Parameter.from(parent, element);
 
-    this.nodes.set(parameter.key, parameter);
-    this.nodesByPath.set(parameter.identifierPath, parameter);
+    this._nodes.set(parameter.key, parameter);
+    this._nodesByPath.set(parameter.identifierPath, parameter);
 
     console.log('created parameter %o', parameter.identifierPath);
   }
@@ -28,8 +28,8 @@ export class Device {
   _createNode(parent, element) {
     const node = Node.from(parent, element);
 
-    this.nodes.set(node.key, node);
-    this.nodesByPath.set(node.identifierPath, node);
+    this._nodes.set(node.key, node);
+    this._nodesByPath.set(node.identifierPath, node);
 
     console.log('created node %o', node.identifierPath);
 
@@ -42,7 +42,7 @@ export class Device {
     let parent;
 
     if (path.length) {
-      parent = this.nodes.get(path.join('.'));
+      parent = this._nodes.get(path.join('.'));
 
       if (!parent) throw new Error('Could not find parent.');
 
@@ -56,7 +56,7 @@ export class Device {
 
   _handleNodeElement(nodeElement, parentPath) {
     const path = parentPath.concat([nodeElement.number]);
-    let node = this.nodes.get(path.join('.'));
+    let node = this._nodes.get(path.join('.'));
 
     if (!node) {
       const parent = this._getParent(parentPath);
@@ -77,7 +77,7 @@ export class Device {
 
   _handleQualifiedNodeElement(nodeElement) {
     const path = nodeElement.path;
-    const node = this.nodes.get(path.join('.'));
+    const node = this._nodes.get(path.join('.'));
 
     if (!node) throw new Error('Unknown qualified node.');
 
@@ -93,7 +93,7 @@ export class Device {
 
   _handleParameterElement(parameterElement, parentPath) {
     const path = parentPath.concat([parameterElement.number]);
-    let parameter = this.nodes.get(path.join('.'));
+    let parameter = this._nodes.get(path.join('.'));
 
     if (!parameter) {
       const parent = this._getParent(parentPath);
@@ -108,7 +108,7 @@ export class Device {
 
   _handleQualifiedParameterElement(parameterElement) {
     const path = parameterElement.path;
-    const parameter = this.nodes.get(path.join('.'));
+    const parameter = this._nodes.get(path.join('.'));
 
     if (!parameter) throw new Error('Unknown qualified parameter');
 
@@ -145,10 +145,13 @@ export class Device {
     this.connection = connection;
 
     // contains all nodes by TreeNode.key
-    this.nodes = new Map();
+    this._nodes = new Map();
 
     // contains all nodes by TreeNode.identifierPath
-    this.nodesByPath = new Map();
+    this._nodesByPath = new Map();
+
+    // contains subscribers for a given path
+    this._pathObservers = new Map();
 
     connection.sendGetDirectory();
     console.log('send get directory');
