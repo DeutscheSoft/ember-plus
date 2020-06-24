@@ -15,7 +15,12 @@ export class TCPConnection extends EmberConnection {
       this.close();
     });
     socket.on('data', (data) => {
-      this.receive(data.buffer);
+      try {
+        this.receive(data.buffer);
+      } catch (err) {
+        console.warn('Protocol error:', err);
+        this.teardown(err);
+      }
     });
   }
 

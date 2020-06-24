@@ -172,6 +172,246 @@ export class emberRoot extends Choice(
   emberStreamCollection
 ) {}
 
+function toQualifiedNode(node) {
+  if (node instanceof emberQualifiedNode) {
+    return emberQualifiedNode.from({
+      path: node.path,
+    });
+  } else if (node instanceof emberNode) {
+    return emberQualifiedNode.from({
+      path: [node.number],
+    });
+  }
+}
+
+class TreeNode {
+  get parent() {
+    return this._parent;
+  }
+
+  get number() {
+    return this._number;
+  }
+
+  get identifier() {
+    return this._identifier;
+  }
+
+  get numericPath() {
+    let path = this._numericPath;
+
+    if (path !== null) return path;
+
+    const parent = this._parent;
+
+    path = [this.number];
+
+    if (parent !== null) path = parent.numericPath.concat(path);
+
+    this._numericPath = path;
+
+    return path;
+  }
+
+  get identifierPath() {
+    let path = this._identifierPath;
+
+    if (path !== null) return path;
+
+    const parent = this._parent;
+
+    path = this.identifier;
+
+    if (parent !== null) path = parent.identifierPath + '/' + path;
+
+    this._identifierPath = path;
+
+    return path;
+  }
+
+  get key() {
+    return this._key;
+  }
+
+  constructor(parent, number, identifier) {
+    this._parent = parent || null;
+    this._number = number;
+    this._identifier = identifier;
+    this._numericPath = null;
+    this._identifierPath = null;
+    this._key = this.numericPath.join('.');
+  }
+}
+
+class Node extends TreeNode {
+  getQualifiedNode() {
+    return emberQualifiedNode.from({
+      path: this.numericPath,
+    });
+  }
+
+  get description() {
+    return this._description;
+  }
+
+  get isRoot() {
+    return this._isRoot;
+  }
+
+  get isOnline() {
+    return this._isOnline;
+  }
+
+  constructor(parent, number, contents) {
+    super(parent, number, contents.identifier);
+    this._description = contents.description;
+    this._isRoot = contents.isRoot;
+    this._isOnline = contents.isOnline !== false;
+  }
+
+  static from(parent, node) {
+    if (node instanceof emberNode) {
+      return new this(parent, node.number, node.contents);
+    } else if (node instanceof emberQualifiedNode) {
+      const number = node.path[node.path.length - 1];
+      return new this(parent, number, node.contents);
+    } else {
+      throw new TypeError('Unsupported node type.');
+    }
+  }
+
+  updateFrom(contents) {
+    for (let name in contents) {
+      const value = contents[name];
+
+      if (value !== void 0 && value !== this[name]) {
+        this['_' + name] = value;
+        // TODO: generate changed event
+      }
+    }
+  }
+}
+
+class Parameter extends TreeNode {
+  getQualifiedParameter() {
+    return emberQualifiedParameter.from({
+      path: this.numericPath,
+    });
+  }
+
+  getSetValue() {
+    return emberQualifiedParameter.from({
+      path: this.numericPath,
+    });
+  }
+
+  get description() {
+    return this._description;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  get minimum() {
+    return this._minimum;
+  }
+
+  get maximum() {
+    return this._maximum;
+  }
+
+  get access() {
+    return this._access;
+  }
+
+  get format() {
+    return this._format;
+  }
+
+  get enumeration() {
+    return this._enumeration;
+  }
+
+  get factor() {
+    return this._factor;
+  }
+
+  get isOnline() {
+    return this._isOnline;
+  }
+
+  get formula() {
+    return this._formula;
+  }
+
+  get step() {
+    return this._step;
+  }
+
+  get default() {
+    return this._default;
+  }
+
+  get type() {
+    return this._type;
+  }
+
+  get streamIdentifier() {
+    return this._streamIdentifier;
+  }
+
+  get enumMap() {
+    return this._enumMap;
+  }
+
+  get streamDescriptor() {
+    return this._streamDescriptor;
+  }
+
+  constructor(parent, number, contents) {
+    super(parent, number, contents.identifier);
+    this._description = contents.description;
+    this._value = contents.value;
+    this._minimum = contents.minimum;
+    this._maximum = contents.maximum;
+    this._access = contents.access;
+    this._format = contents.format;
+    this._enumeration = contents.enumeration;
+    this._factor = contents.factor;
+    this._isOnline = contents.isOnline !== false;
+    this._formula = contents.formula;
+    this._step = contents.step;
+    this._default = contents.default;
+    this._type = contents.type;
+    this._streamIdentifier = contents.streamIdentifier;
+    this._enumMap = contents.enumMap;
+    this._streamDescriptor = contents.streamDescriptor;
+  }
+
+  updateFrom(contents) {
+    for (let name in contents) {
+      const value = contents[name];
+
+      if (value !== void 0 && value !== this[name]) {
+        this['_' + name] = value;
+        // TODO: generate changed event
+      }
+    }
+  }
+
+  static from(parent, parameter) {
+    if (parameter instanceof emberParameter) {
+      return new this(parent, parameter.number, parameter.contents);
+    } else if (parameter instanceof emberQualifiedParameter) {
+      const number = parameter.path[parameter.path.length - 1];
+      return new this(parent, number, parameter.contents);
+    } else {
+      throw new TypeError('Unsupported parameter type.');
+    }
+  }
+}
+
 /*
  * Connection handling.
  */
@@ -180,28 +420,26 @@ export class EmberConnection {
   constructor() {
     this.frame_decoder = new S101FrameDecoder();
     this.fragments = null;
-    this.onerror = null;
-    this.onclose = null;
-    this.onmessage = null;
+    this.onRootElement = null;
   }
 
   send(buf) {
     this.write(S101EncodeFrame(buf));
   }
 
-  send_keepalive_request() {
+  sendKeepaliveRequest() {
     const u8 = Uint8Array.from([0, 0x0e, 0x01, 0x01]);
 
     this.send(u8.buffer);
   }
 
-  send_keepalive_response() {
+  sendKeepaliveResponse() {
     const u8 = Uint8Array.from([0, 0x0e, 0x02, 0x01]);
 
     this.send(u8.buffer);
   }
 
-  send_ember(tlv) {
+  sendEmber(tlv) {
     const buf = tlv.encode();
     const u8 = new Uint8Array(9 + buf.byteLength);
     u8.set([0, 0x0e, 0x00, 0x01, 0xc0, 0x01, 0x02, 31, 0x02], 0);
@@ -210,52 +448,45 @@ export class EmberConnection {
     this.send(u8.buffer);
   }
 
-  send_get_directory(node) {
+  sendGetDirectory(node) {
     const list = [];
     const cmd = new emberCommand('getDirectory');
 
     if (node) {
-      console.log('Sending getDirectory for node %o', node);
-      const tmp = emberNode.from({
-        number: node.number,
-        children: new emberElementCollection([cmd]),
-      });
-      list.push(tmp);
+      const qualifiedNode = toQualifiedNode(node);
+      qualifiedNode.children = new emberElementCollection([cmd]);
+      list.push(qualifiedNode);
     } else {
-      console.log('Sending getDirectory for Root node');
       list.push(cmd);
     }
     const collection = new emberRootElementCollection(list);
     const root = new emberRoot(collection);
-    this.send_ember(root.encode());
+    this.sendEmber(root.encode());
   }
 
-  handle_message(data, pos) {
+  onMessage(data, pos) {
     try {
       while (pos < data.byteLength) {
         let tlv;
         [tlv, pos] = TLV.decode_from(data, pos);
         const root = emberRoot.decode(tlv);
 
+        //console.log('Received message', root);
+
         root.value.list.forEach((element) => {
-          if (element instanceof emberNode) {
-            console.log('Node:', element);
-            this.send_get_directory(element);
-          } else if (element instanceof emberParameter) {
-            console.log('Parameter:', element);
-          } else if (element instanceof emberQualifiedParameter) {
-            console.log('QualifiedParameter:', element);
-          } else if (element instanceof emberQualifiedNode) {
-            console.log('QualifiedNode:', element);
-          } else {
-            console.log('Unknown:', element);
+          if (this.onRootElement === null) {
+            console.warn('Dropped root element %o', element);
+          }
+
+          try {
+            this.onRootElement(element);
+          } catch (error) {
+            console.error(error);
           }
         });
-
-        //this.send_ember(root.encode());
       }
     } catch (error) {
-      console.error('Error in handle_message', error);
+      console.error('Error in onMessage', error);
     }
   }
 
@@ -280,7 +511,7 @@ export class EmberConnection {
       if (version !== 1) throw new Error('Unsupported Ember version.');
 
       if (command === 1) {
-        this.send_keepalive_response();
+        this.sendKeepaliveResponse();
         continue;
       }
 
@@ -313,7 +544,7 @@ export class EmberConnection {
         case 0x20: // empty packet
           break;
         case 0xc0:
-          this.handle_message(frame, pos);
+          this.onMessage(frame, pos);
           break;
         case 0x80: // multi-packet message start
           if (this.fragments)
@@ -353,7 +584,7 @@ export class EmberConnection {
             pos += fragment.byteLength;
           }
 
-          this.handle_message(new DataView(out), 0);
+          this.onMessage(new DataView(out), 0);
           break;
         }
         default:
@@ -381,5 +612,171 @@ export class EmberConnection {
         console.error(e);
       }
     }
+  }
+}
+
+function getKey(element) {
+  if (element instanceof emberNode || element instanceof emberParameter) {
+    return '' + element.number;
+  } else {
+    return element.path.join('.');
+  }
+}
+
+export class Device {
+  _createParameter(parent, element) {
+    const parameter = Parameter.from(parent, element);
+
+    this.nodes.set(parameter.key, parameter);
+    this.nodesByPath.set(parameter.identifierPath, parameter);
+
+    console.log('created parameter %o', parameter.identifierPath);
+  }
+
+  _createNode(parent, element) {
+    const node = Node.from(parent, element);
+
+    this.nodes.set(node.key, node);
+    this.nodesByPath.set(node.identifierPath, node);
+
+    console.log('created node %o', node.identifierPath);
+
+    this.connection.sendGetDirectory(node.getQualifiedNode());
+
+    return node;
+  }
+
+  _getParent(path) {
+    let parent;
+
+    if (path.length) {
+      parent = this.nodes.get(path.join('.'));
+
+      if (!parent) throw new Error('Could not find parent.');
+
+      if (!(parent instanceof Node)) throw new Error('Expected Node parent.');
+    } else {
+      parent = null;
+    }
+
+    return parent;
+  }
+
+  _handleNodeElement(nodeElement, parentPath) {
+    const path = parentPath.concat([nodeElement.number]);
+    let node = this.nodes.get(path.join('.'));
+
+    if (!node) {
+      const parent = this._getParent(parentPath);
+
+      node = this._createNode(parent, nodeElement);
+    } else {
+      // update
+      if (nodeElement.contents) node.updateFrom(nodeElement.contents);
+    }
+
+    if (nodeElement.children === void 0) return;
+
+    console.log('children', nodeElement.children);
+    nodeElement.children.list.forEach((element) => {
+      this._handleElement(element, path);
+    });
+  }
+
+  _handleQualifiedNodeElement(nodeElement) {
+    const path = nodeElement.path;
+    const node = this.nodes.get(path.join('.'));
+
+    if (!node) throw new Error('Unknown qualified node.');
+
+    // update
+    if (nodeElement.contents) node.updateFrom(nodeElement.contents);
+
+    if (nodeElement.children === void 0) return;
+
+    nodeElement.children.list.forEach((element) => {
+      this._handleElement(element, path);
+    });
+  }
+
+  _handleParameterElement(parameterElement, parentPath) {
+    const path = parentPath.concat([parameterElement.number]);
+    let parameter = this.nodes.get(path.join('.'));
+
+    if (!parameter) {
+      const parent = this._getParent(parentPath);
+
+      parameter = this._createParameter(parent, parameterElement);
+    } else {
+      // update
+      if (parameterElement.contents !== void 0)
+        parameter.updateFrom(parameterElement.contents);
+    }
+  }
+
+  _handleQualifiedParameterElement(parameterElement) {
+    const path = parameterElement.path;
+    const parameter = this.nodes.get(path.join('.'));
+
+    if (!parameter) throw new Error('Unknown qualified parameter');
+
+    // update
+    if (parameterElement.contents !== void 0)
+      parameter.updateFrom(parameterElement.contents);
+  }
+
+  _handleElement(element, path) {
+    if (element instanceof emberNode) {
+      this._handleNodeElement(element, path);
+    } else if (element instanceof emberParameter) {
+      this._handleParameterElement(element, path);
+    } else {
+      throw new TypeError('Unsupported type.');
+    }
+  }
+
+  _handleRootElement(element) {
+    if (element instanceof emberNode) {
+      this._handleNodeElement(element, []);
+    } else if (element instanceof emberParameter) {
+      this._handleParameterElement(element, []);
+    } else if (element instanceof emberQualifiedNode) {
+      this._handleQualifiedNodeElement(element);
+    } else if (element instanceof emberQualifiedParameter) {
+      this._handleQualifiedParameterElement(element);
+    } else {
+      throw new TypeError('Unsupported type.');
+    }
+  }
+
+  constructor(connection) {
+    this.connection = connection;
+
+    // contains all nodes by TreeNode.key
+    this.nodes = new Map();
+
+    // contains all nodes by TreeNode.identifierPath
+    this.nodesByPath = new Map();
+
+    connection.sendGetDirectory();
+    console.log('send get directory');
+
+    connection.onerror = (error) => {
+      console.error('Error in device connection', error);
+    };
+    connection.onRootElement = (element) => {
+      if (element instanceof emberCommand) {
+      } else if (
+        element instanceof emberParameter ||
+        element instanceof emberQualifiedParameter ||
+        element instanceof emberNode ||
+        element instanceof emberQualifiedNode
+      ) {
+        this._handleRootElement(element);
+      } else {
+        console.warn('Ignored root element', element);
+      }
+    };
+    connection.sendKeepaliveRequest();
   }
 }
