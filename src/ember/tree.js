@@ -61,6 +61,40 @@ class TreeNode {
     this._numericPath = null;
     this._identifierPath = null;
     this._key = this.numericPath.join('.');
+    this._propertyObservers = [];
+  }
+
+  subscribePropertyChanged(callback) {
+    const observers = this._propertyObservers;
+
+    if (observers.includes(callback)) throw new Error('Already subscribed.');
+
+    observers.push(callback);
+
+    return () => {
+      const observers = this._propertyObservers;
+      this._propertyObservers = observers.filter(_cb !== callback);
+    };
+  }
+
+  observeProperty(name, callback) {
+    if (this[name] !== void 0) callback(this[name]);
+    return this.subscribePropertyChanged((_name, value) => {
+      if (name !== _name) return;
+      callback(value);
+    });
+  }
+
+  propertyChanged(name, value) {
+    const observers = this._propertyObservers;
+
+    for (let i = 0; i < observers.length; i++) {
+      try {
+        observers[i](name, value);
+      } catch (error) {
+        console.error(error);
+      }
+    }
   }
 }
 
@@ -107,7 +141,7 @@ export class Node extends TreeNode {
 
       if (value !== void 0 && value !== this[name]) {
         this['_' + name] = value;
-        // TODO: generate changed event
+        this.propertyChanged(name, value);
       }
     }
   }
@@ -190,6 +224,42 @@ export class Parameter extends TreeNode {
     return this._streamDescriptor;
   }
 
+  get effectiveValue() {
+    const value = this._value;
+
+    if (value === void 0) return this._default;
+
+    const factor = this._factor;
+
+    if (factor !== void 0 && factor !== 0) {
+      return value / factor;
+    }
+
+    const enumeration = this._enumeration;
+
+    if (enumeration) return enumeration.split('\n')[value];
+
+    return value;
+  }
+
+  fromEffectiveValue(value) {
+    const factor = this._factor;
+
+    if (factor !== void 0 && factor !== 0) return value * factor;
+
+    const enumeration = this._enumeration;
+
+    if (enumeration !== void 0) {
+      let pos = enumeration.split('\n').indexOf(value);
+
+      if (pos === -1) throw new Error('Unknown enum entry.');
+
+      return pos;
+    }
+
+    return value;
+  }
+
   constructor(parent, number, contents) {
     super(parent, number, contents.identifier);
     this._description = contents.description;
@@ -216,7 +286,7 @@ export class Parameter extends TreeNode {
 
       if (value !== void 0 && value !== this[name]) {
         this['_' + name] = value;
-        // TODO: generate changed event
+        this.propertyChanged(name, value);
       }
     }
   }
@@ -231,5 +301,14 @@ export class Parameter extends TreeNode {
       throw new TypeError('Unsupported parameter type.');
     }
   }
-}
 
+  observeEffectiveValue(callback) {
+    const value = this.effectiveValue;
+
+    if (value !== void 0) callback(value);
+
+    return this.subscribePropertyChanged(() => {
+      callback(this.effectiveValue);
+    });
+  }
+}

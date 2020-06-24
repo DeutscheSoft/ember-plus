@@ -20,18 +20,22 @@ export class Device {
     const parameter = Parameter.from(parent, element);
 
     this._nodes.set(parameter.key, parameter);
-    this._nodesByPath.set(parameter.identifierPath, parameter);
 
-    console.log('created parameter %o', parameter.identifierPath);
+    const identifierPath = parameter.identifierPath;
+
+    this._nodesByPath.set(identifierPath, parameter);
+    this._onNodeChanged(identifierPath, parameter);
   }
 
   _createNode(parent, element) {
     const node = Node.from(parent, element);
 
     this._nodes.set(node.key, node);
-    this._nodesByPath.set(node.identifierPath, node);
 
-    console.log('created node %o', node.identifierPath);
+    const identifierPath = node.identifierPath;
+
+    this._nodesByPath.set(identifierPath, node);
+    this._onNodeChanged(identifierPath, node);
 
     this.connection.sendGetDirectory(node.getQualifiedNode());
 
@@ -141,6 +145,22 @@ export class Device {
     }
   }
 
+  _onNodeChanged(path, node) {
+    const observers = this._pathObservers;
+
+    const list = observers.get(path);
+
+    if (list === void 0) return;
+
+    for (let i = 0; i < list.length; i++) {
+      try {
+        list[i](node);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
   constructor(connection) {
     this.connection = connection;
 
@@ -173,5 +193,57 @@ export class Device {
       }
     };
     connection.sendKeepaliveRequest();
+  }
+
+  observePath(path, callback) {
+    if (typeof path !== 'string') throw new TypeError('Expected string.');
+    if (typeof callback !== 'function')
+      throw new TypeError('Expected function.');
+
+    const observers = this._pathObservers;
+
+    let list = observers.get(path);
+
+    let innerSubscription = null;
+
+    if (!list) {
+      observers.set(path, (list = []));
+    }
+
+    const cb = (node) => {
+      if (innerSubscription !== null) {
+        try {
+          innerSubscfiption();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      innerSubscription = callback(node) || null;
+    };
+
+    list.push(cb);
+
+    const node = this._nodesByPath.get(path);
+
+    if (node !== void 0) {
+      try {
+        cb(node);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    return () => {
+      if (callback === null) return;
+      callback = null;
+      const observers = this._pathObservers;
+      const list = observers.get(path);
+
+      observers.set(
+        path,
+        list.filter((_cb) => _cb !== cb)
+      );
+    };
   }
 }

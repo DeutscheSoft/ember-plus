@@ -170,4 +170,3 @@ export class emberRoot extends Choice(
   emberRootElementCollection,
   emberStreamCollection
 ) {}
-
