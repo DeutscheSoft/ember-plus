@@ -55,20 +55,26 @@ export class EmberConnection {
     this.send(u8.buffer);
   }
 
-  sendGetDirectory(node) {
+  sendRoot(rootElement) {
     const list = [];
+    list.push(rootElement);
+    const collection = new emberRootElementCollection(list);
+    const root = new emberRoot(collection);
+    this.sendEmber(root.encode());
+  }
+
+  sendGetDirectory(node) {
     const cmd = new emberCommand('getDirectory');
+    let rootElement;
 
     if (node) {
       const qualifiedNode = toQualifiedNode(node);
       qualifiedNode.children = new emberElementCollection([cmd]);
-      list.push(qualifiedNode);
+      rootElement = qualifiedNode;
     } else {
-      list.push(cmd);
+      rootElement = cmd;
     }
-    const collection = new emberRootElementCollection(list);
-    const root = new emberRoot(collection);
-    this.sendEmber(root.encode());
+    this.sendRoot(rootElement);
   }
 
   onMessage(data, pos) {
