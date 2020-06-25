@@ -234,7 +234,10 @@ export class TLV {
       for (let i = 0; i < value.length; i++) {
         const ctlv = value[i];
 
-        if (type === TYPE_SET && ctlv === void 0) continue;
+        if (ctlv === void 0) {
+          if (type === TYPE_SET) continue;
+          throw new Error('Undefined entry in non-set.');
+        }
 
         length += value[i].encoded_length();
       }
@@ -793,6 +796,9 @@ function StructBase(identifier, properties) {
       const values = tlv.value;
       const args = new Array(property_names.length);
 
+      if (tlv.identifier !== identifier)
+        throw new Error('Type mismatch.');
+
       for (let i = 0; i < values.length; i++) {
         let ctlv = values[i];
         const idx = ctlv.context;
@@ -858,7 +864,7 @@ export function AnonymousStruct(properties) {
 }
 
 export function AnonymousChoice(...types) {
-  const universal_types = new Array(31);
+  const universal_types = new Array(31).fill(false);
   const application_types = new Array(31);
 
   for (let i = 0; i < types.length; i++) {
@@ -873,18 +879,34 @@ export function AnonymousChoice(...types) {
 
   return class {
     static encode(value) {
-      if (typeof value === 'object') {
-        const application_id = value.application_id;
-
-        if (typeof application_id !== 'number')
-          throw new Error('Received type with missing application id.');
-
-        const type = application_types[application_id];
+      if (typeof value === 'object' && typeof value.application_id === 'number') {
+        const type = application_types[value.application_id];
 
         if (type === void 0) throw new Error('Choice mismatch.');
 
         return type.encode(value);
       } else {
+        // try to find the right universal type for encoding this value.
+
+        switch (typeof value) {
+          case 'string':
+            if (!universal_types[TYPE_UTF8STRING])
+              break;
+            return TLV.UTF8STRING(value);
+          case 'number':
+            if (universal_types[TYPE_INTEGER] && isFinite(value) && Math.round(value) === value)
+              return TLV.INTEGER(value);
+
+            if (universal_types[TYPE_REAL])
+              return TLV.REAL(value);
+            break;
+          case 'boolean':
+            if (universal_types[TYPE_BOOLEAN])
+              return TLV.BOOLEAN(value);
+            break;
+        }
+
+        throw new TypeError('Cannot enocde type.');
       }
     }
 
