@@ -10,7 +10,7 @@ import { assert_equal } from './helpers.js';
 
 export function testEmber() {
   {
-    const cmd = new emberCommand('getDirectory');
+    const cmd = new emberCommand([ 'getDirectory' ]);
     const collection = new emberRootElementCollection([cmd]);
     const root = new emberRoot(collection);
     test_ber_encode_decode(cmd);
@@ -51,7 +51,7 @@ export function testEmber() {
         ]).buffer
       )
     );
-    const cmd = new emberCommand('getDirectory');
+    const cmd = new emberCommand([ 'getDirectory' ]);
     const collection = new emberRootElementCollection([cmd]);
     const root = new emberRoot(collection);
     const buf = root.encode().encode();

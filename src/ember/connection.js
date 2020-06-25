@@ -64,7 +64,7 @@ export class EmberConnection {
   }
 
   sendGetDirectory(node) {
-    const cmd = new emberCommand('getDirectory');
+    const cmd = new emberCommand(['getDirectory']);
     let rootElement;
 
     if (node) {

@@ -741,10 +741,24 @@ function StructBase(identifier, properties) {
   identifier |= 32;
 
   return class {
-    constructor(...args) {
-      for (let i = 0; i < property_names.length; i++) {
-        const name = property_names[i];
-        this[name] = args[i];
+    constructor(args) {
+      if (Array.isArray(args)) {
+        for (let i = 0; i < property_names.length; i++) {
+          const name = property_names[i];
+          this[name] = args[i];
+        }
+      } else if (typeof args === 'object') {
+        for (let i = 0; i < property_names.length; i++) {
+          const name = property_names[i];
+          this[name] = args[name];
+        }
+      } else if (args === void 0) {
+        for (let i = 0; i < property_names.length; i++) {
+          const name = property_names[i];
+          this[name] = void 0;
+        }
+      } else {
+        throw new TypeError('Expected array or object.');
       }
     }
 
@@ -820,17 +834,11 @@ export function Struct(application_id, properties) {
     }
 
     static decode(tlv) {
-      return new this(...Base.decode(tlv));
+      return new this(Base.decode(tlv));
     }
 
     static from(o) {
-      const args = [];
-      for (let name in properties) {
-        if (!properties.hasOwnProperty(name)) continue;
-        args.push(o[name]);
-      }
-
-      return new this(...args);
+      return new this(o);
     }
   };
 }
@@ -844,7 +852,7 @@ export function AnonymousStruct(properties) {
     }
 
     static decode(tlv) {
-      return new this(...Base.decode(tlv));
+      return new this(Base.decode(tlv));
     }
   };
 }
