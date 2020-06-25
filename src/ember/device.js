@@ -246,4 +246,11 @@ export class Device {
       );
     };
   }
+
+  setValue(parameter, value) {
+    this.connection.sendRoot(parameter.getSetValue(value));
+  }
+
+  setEffectiveValue(parameter, value) {
+  }
 }

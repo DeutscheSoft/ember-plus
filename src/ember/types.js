@@ -100,7 +100,7 @@ const emberStreamDescription = Struct(12, {
   offset: TYPE_INTEGER,
 });
 
-const emberParameterContents = AnonymousStruct({
+export class emberParameterContents extends AnonymousStruct({
   identifier: TYPE_UTF8STRING,
   description: TYPE_UTF8STRING,
   value: emberValue,
@@ -118,7 +118,7 @@ const emberParameterContents = AnonymousStruct({
   streamIdentifier: TYPE_INTEGER,
   enumMap: emberStringIntegerCollection,
   streamDescriptor: emberStreamDescription,
-});
+}) {}
 
 export class emberElementCollection extends SequenceOf(4, null) {}
 

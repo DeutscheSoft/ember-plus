@@ -1,6 +1,7 @@
 import {
   emberNode,
   emberParameter,
+  emberParameterContents,
   emberQualifiedNode,
   emberQualifiedParameter,
 } from './types.js';
@@ -154,10 +155,14 @@ export class Parameter extends TreeNode {
     });
   }
 
-  getSetValue() {
-    return emberQualifiedParameter.from({
+  getSetValue(value) {
+    const result = emberQualifiedParameter.from({
       path: this.numericPath,
+      contents: new emberParameterContents({
+        value: value,
+      }),
     });
+    return result;
   }
 
   get description() {
