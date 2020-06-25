@@ -65,4 +65,15 @@ export function testEmber() {
 
     assert_equal(u8, reference);
   }
+  {
+    const result = emberQualifiedParameter.from({
+      path: [1, 2, 3, 4],
+      contents: new emberParameterContents({
+        value: 'foo',
+      }),
+    });
+    const tlv = result.contents.encode();
+    test_ber_encode_decode(result);
+  }
+
 }
