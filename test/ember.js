@@ -4,7 +4,11 @@ import {
   emberRoot,
   emberCommand,
   emberRootElementCollection,
-} from '../src/ember.js';
+  emberQualifiedParameter,
+  emberParameterContents,
+} from '../src/ember/types.js';
+
+import { inspect } from 'util';
 
 import { assert_equal } from './helpers.js';
 
