@@ -8,7 +8,8 @@
   },
   "type": "module",
   "scripts": { 
-    "prettier": "cd prettier && npm run prettier"
+    "prettier": "cd prettier && npm run prettier",
+    "build": "./node_modules/.bin/rollup -c rollup.config.js"
   },
   "author": "Arne Goedeke <arne@deuso.de>"
 }
