@@ -37,7 +37,9 @@ export class Device {
     this._nodesByPath.set(identifierPath, node);
     this._onNodeChanged(identifierPath, node);
 
-    this.connection.sendGetDirectory(node.getQualifiedNode());
+    if (this._observerCount.get(identifierPath) > 0) {
+      this.connection.sendGetDirectory(node.getQualifiedNode());
+    }
 
     return node;
   }
@@ -73,7 +75,6 @@ export class Device {
 
     if (nodeElement.children === void 0) return;
 
-    console.log('children', nodeElement.children);
     nodeElement.children.list.forEach((element) => {
       this._handleElement(element, path);
     });
@@ -161,6 +162,49 @@ export class Device {
     }
   }
 
+  _increaseObserverCount(path) {
+    const a = path.split('/');
+    const observerCount = this._observerCount;
+
+    let lastNode = null;
+
+    for (let i = 1; i < a.length; i++) {
+      const partialPath = a.slice(0, i).join('/');
+      let n = 0|observerCount.get(partialPath);
+
+      n++;
+
+      observerCount.set(partialPath, n);
+
+      if (n > 1) continue;
+
+      const node = this._nodesByPath.get(partialPath);
+
+      if (node && node instanceof Node) {
+        lastNode = node;
+      }
+    }
+
+    if (lastNode === null) return;
+    this.connection.sendGetDirectory(lastNode.getQualifiedNode());
+  }
+
+  _decreaseObserverCount(path) {
+    const a = path.split('/');
+    const observerCount = this._observerCount;
+
+    for (let i = 1; i < a.length; i++) {
+      const partialPath = a.slice(0, i).join('/');
+      let n = 0|observerCount.get(partialPath);
+
+      if (n > 1) {
+        observerCount.set(partialPath, n - 1);
+      } else {
+        observerCount.delete(partialPath);
+      }
+    }
+  }
+
   constructor(connection) {
     this.connection = connection;
 
@@ -173,8 +217,11 @@ export class Device {
     // contains subscribers for a given path
     this._pathObservers = new Map();
 
+    // contains counts of observers for each identifierPath.
+    // This includes all parent paths up to the root
+    this._observerCount = new Map();
+
     connection.sendGetDirectory();
-    console.log('send get directory');
 
     connection.onerror = (error) => {
       console.error('Error in device connection', error);
@@ -234,6 +281,8 @@ export class Device {
       }
     }
 
+    this._increaseObserverCount(path);
+
     return () => {
       if (callback === null) return;
       callback = null;
@@ -244,6 +293,7 @@ export class Device {
         path,
         list.filter((_cb) => _cb !== cb)
       );
+      this._decreaseObserverCount(path);
     };
   }
 
