@@ -1,4 +1,4 @@
-import { EmberConnection } from './ember.js';
+import { EmberConnection } from './connection.js';
 
 export class WebSocketConnection extends EmberConnection {
   constructor(ws, ...args) {

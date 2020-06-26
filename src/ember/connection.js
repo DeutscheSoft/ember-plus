@@ -23,10 +23,16 @@ function toQualifiedNode(node) {
   }
 }
 
+function dispatch(cb) {
+  Promise.resolve().then(cb);
+}
+
 export class EmberConnection {
   constructor() {
     this._frameDecoder = new S101FrameDecoder();
     this._fragments = null;
+    this._rootElements = [];
+    this.batch = 5;
     this.onRootElement = null;
   }
 
@@ -55,12 +61,27 @@ export class EmberConnection {
     this.send(u8.buffer);
   }
 
+  flushRoot() {
+    const rootElements = this._rootElements;
+    const N = this.batch;
+
+    for (let i = 0; i < rootElements.length; i += N) {
+      const list = rootElements.slice(i, i + N);
+      const collection = new emberRootElementCollection(list);
+      const root = new emberRoot(collection);
+      this.sendEmber(root.encode());
+    }
+    rootElements.length = 0;
+  }
+
   sendRoot(rootElement) {
-    const list = [];
+    const list = this._rootElements;
     list.push(rootElement);
-    const collection = new emberRootElementCollection(list);
-    const root = new emberRoot(collection);
-    this.sendEmber(root.encode());
+    if (list.length !== 1) return;
+    dispatch(() => {
+      if (this.isClosed()) return;
+      this.flushRoot();
+    });
   }
 
   sendGetDirectory(node) {
@@ -207,23 +228,14 @@ export class EmberConnection {
   }
 
   teardown(err) {
-    if (this.onerror) {
-      try {
-        this.onerror(err);
-      } catch (e) {
-        console.error(e);
-      }
-    }
     this.close();
   }
 
   close() {
-    if (this.onclose) {
-      try {
-        this.onclose();
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    this._frameDecoder = null;
+  }
+
+  isClosed() {
+    return this._frameDecoder === null;
   }
 }

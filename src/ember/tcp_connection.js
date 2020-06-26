@@ -1,20 +1,16 @@
-import { EmberConnection } from './ember.js';
+import { EmberConnection } from './connection.js';
 import { createConnection } from 'net';
 
 export class TCPConnection extends EmberConnection {
   constructor(socket) {
     super();
     this.socket = socket;
-    this._onerror = (err) => {
-      this.teardown(err);
-    };
-    this._onclose = () => {
-      this.close();
-    };
     socket.on('close', () => {
+      if (this.isClosed()) return;
       this.close();
     });
     socket.on('data', (data) => {
+      if (this.isClosed()) return;
       try {
         this.receive(data.buffer);
       } catch (err) {
@@ -31,7 +27,7 @@ export class TCPConnection extends EmberConnection {
   close() {
     super.close();
     try {
-      this.socket.close();
+      this.socket.destroy();
     } catch (err) {}
   }
 

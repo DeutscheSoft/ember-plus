@@ -1,2 +1,2 @@
 export * from './ember.js';
-export { WebSocketConnection } from './websocket_connection.js';
+export { WebSocketConnection } from './ember/websocket_connection.js';

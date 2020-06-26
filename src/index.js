@@ -1,2 +1,2 @@
 export * from './ember.js';
-export { TCPConnection } from './tcp_connection.js';
+export { TCPConnection } from './ember/tcp_connection.js';
