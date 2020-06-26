@@ -25,8 +25,8 @@ function toQualifiedNode(node) {
 
 export class EmberConnection {
   constructor() {
-    this.frame_decoder = new S101FrameDecoder();
-    this.fragments = null;
+    this._frameDecoder = new S101FrameDecoder();
+    this._fragments = null;
     this.onRootElement = null;
   }
 
@@ -104,10 +104,10 @@ export class EmberConnection {
   }
 
   receive(buf) {
-    this.frame_decoder.feed(buf);
+    this._frameDecoder.feed(buf);
 
     while (true) {
-      let frame = this.frame_decoder.parse();
+      let frame = this._frameDecoder.parse();
 
       if (frame === null) break;
 
@@ -145,8 +145,8 @@ export class EmberConnection {
 
       switch (flags) {
         case 0x00: // multi-message packet
-          if (!this.fragments) throw new Error('Have empty partition buffer.');
-          this.fragments.push(
+          if (!this._fragments) throw new Error('Have empty partition buffer.');
+          this._fragments.push(
             new Uint8Array(
               frame.buffer,
               frame.byteOffset + pos,
@@ -160,9 +160,9 @@ export class EmberConnection {
           this.onMessage(frame, pos);
           break;
         case 0x80: // multi-packet message start
-          if (this.fragments)
+          if (this._fragments)
             throw new Error('Still have non-empty partition buffer.');
-          this.fragments = [
+          this._fragments = [
             new Uint8Array(
               frame.buffer,
               frame.byteOffset + pos,
@@ -172,8 +172,8 @@ export class EmberConnection {
           break;
         case 0x40: {
           // multi-packet message end
-          if (!this.fragments) throw new Error('Have empty partition buffer.');
-          this.fragments.push(
+          if (!this._fragments) throw new Error('Have empty partition buffer.');
+          this._fragments.push(
             new Uint8Array(
               frame.buffer,
               frame.byteOffset + pos,
@@ -182,8 +182,8 @@ export class EmberConnection {
           );
 
           let length = 0;
-          const fragments = this.fragments;
-          this.fragments = null;
+          const fragments = this._fragments;
+          this._fragments = null;
 
           for (let i = 0; i < fragments.length; i++)
             length += fragments[i].byteLength;
