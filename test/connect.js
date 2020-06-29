@@ -1,9 +1,32 @@
 import { TCPConnection } from '../src/index.js';
 import { Device } from '../src/index.js';
 
+function run(device) {
+  return new Promise((resolve, reject) => {  
+    const sub = device.observePath('XCMC#1/InputChan#1/Label', (node) => {
+      setTimeout(() => {
+        console.log('Setting value');
+        device.setValue(node, 'Foo');
+        sub();
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      }, 100);
+      return node.observeEffectiveValue((v) => {
+        console.log('label ->', v);
+      });
+    });
+  });
+}
+
 async function testConnect(options) {
   const connection = await TCPConnection.connect(options);
   const device = new Device(connection);
+
+  for (let i = 0; i < 10; i++) {
+    console.log('run ', i)
+    await run(device);
+  }
 
   if (false)
     device.observePath('XCMC#1/InputChan#39/AuxBus#8/PreFader', (node) => {
@@ -18,20 +41,7 @@ async function testConnect(options) {
       });
     });
 
-  const sub = device.observePath('XCMC#1/InputChan#1/Label', (node) => {
-    setTimeout(() => {
-      console.log('Setting value');
-      device.setValue(node, 'Foo');
-      sub();
-      setTimeout(() => {
-        connection.close();
-        console.log('Closed');
-      }, 100);
-    }, 2000);
-    return node.observeEffectiveValue((v) => {
-      console.log('label ->', v);
-    });
-  });
+  connection.close();
 }
 
 const options = {
