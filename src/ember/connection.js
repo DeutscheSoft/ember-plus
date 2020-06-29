@@ -106,10 +106,10 @@ export class EmberConnection {
 
   sendUnsubscribe(node) {
     const cmd = new emberCommand(['unsubscribe']);
-    const qualifiedNode = toQualifiedNode(node);
-    qualifiedNode.children = new emberElementCollection([cmd]);
+    const qualifiedElement = toQualifiedElement(node);
+    qualifiedElement.children = new emberElementCollection([cmd]);
 
-    this.sendRoot(qualifiedNode);
+    this.sendRoot(qualifiedElement);
   }
 
   onMessage(data, pos) {
