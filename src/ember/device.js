@@ -112,7 +112,11 @@ export class Device {
 
     // this changes all paths of children below this node. it is best to remove
     // them all
-    if (node && nodeElement.contents && node.identifier !== nodeElement.contents.identifier) {
+    if (
+      node &&
+      nodeElement.contents &&
+      node.identifier !== nodeElement.contents.identifier
+    ) {
       this._removeNodeRecursively(node);
       node = null;
     }
@@ -183,7 +187,13 @@ export class Device {
     const path = parameterElement.path;
     const parameter = this._nodes.get(path.join('.'));
 
-    if (!parameter) throw new Error('Unknown qualified parameter');
+    if (!parameter) {
+      // we do not care about this node
+      this.connection.sendUnsubscribe(
+        emberQualifiedParameter.from({ path: parameterElement.path })
+      );
+      return;
+    }
 
     // update
     if (parameterElement.contents !== void 0)
