@@ -379,9 +379,28 @@ export class Device {
     };
   }
 
+  /**
+   * Set the value of a parameter.
+   *
+   * @param {Parameter} parameter The parameter node.
+   * @param {*} value The new value.
+   * @return void
+   */
   setValue(parameter, value) {
     this.connection.sendRoot(parameter.getSetValue(value));
   }
 
-  setEffectiveValue(parameter, value) {}
+  /**
+   * Set the value of a parameter. Here value is the `effective value` instead
+   * of the raw one. This means that any transformation specified in the
+   * Parameter is reversed. For instance, this can be used to set an enum using
+   * the enumeration name instead of the value.
+   *
+   * @param {Parameter} parameter The parameter node.
+   * @param {*} value The new value.
+   * @return void
+   */
+  setEffectiveValue(parameter, value) {
+    this.setValue(parameter, parameter.fromEffectiveValue(value));
+  }
 }
