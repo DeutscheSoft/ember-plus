@@ -13,6 +13,10 @@ export default [
       file: 'dist/ember-plus.js',
       format: 'umd',
       name: 'EmberPlus',
-    }
+      globals: {
+        net: 'net',
+      },
+    },
+    external: [ 'net' ],
   },
 ];
