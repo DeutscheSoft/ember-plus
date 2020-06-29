@@ -2,7 +2,7 @@ import { TCPConnection } from '../src/index.js';
 import { Device } from '../src/index.js';
 
 function run(device) {
-  return new Promise((resolve, reject) => {  
+  return new Promise((resolve, reject) => {
     const sub = device.observePath('XCMC#1/InputChan#1/Label', (node) => {
       setTimeout(() => {
         console.log('Setting value');
@@ -24,7 +24,7 @@ async function testConnect(options) {
   const device = new Device(connection);
 
   for (let i = 0; i < 10; i++) {
-    console.log('run ', i)
+    console.log('run ', i);
     await run(device);
   }
 
