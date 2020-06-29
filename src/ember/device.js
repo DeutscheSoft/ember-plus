@@ -110,6 +110,13 @@ export class Device {
       node = null;
     }
 
+    // this changes all paths of children below this node. it is best to remove
+    // them all
+    if (node && nodeElement.contents && node.identifier !== nodeElement.contents.identifier) {
+      this._removeNodeRecursively(node);
+      node = null;
+    }
+
     if (!node) {
       const parent = this._getParent(parentPath);
 
@@ -227,6 +234,7 @@ export class Device {
     const a = path.split('/');
     const observerCount = this._observerCount;
 
+    const hasNode = !!this.getNodeByPath(path);
     let lastNode = null;
 
     for (let i = 1; i < a.length; i++) {
@@ -237,17 +245,18 @@ export class Device {
 
       observerCount.set(partialPath, n);
 
-      if (n > 1) continue;
+      if (hasNode) continue;
 
-      const node = this._nodesByPath.get(partialPath);
+      const node = this.getNodeByPath(partialPath);
 
       if (node && node instanceof Node) {
         lastNode = node;
       }
     }
 
-    if (lastNode === null) return;
-    this.connection.sendGetDirectory(lastNode.getQualifiedNode());
+    if (hasNode) return;
+
+    this.connection.sendGetDirectory(lastNode ? lastNode.getQualifiedNode() : void 0);
   }
 
   _decreaseObserverCount(path) {

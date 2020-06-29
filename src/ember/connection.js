@@ -119,8 +119,6 @@ export class EmberConnection {
         [tlv, pos] = TLV.decode_from(data, pos);
         const root = emberRoot.decode(tlv);
 
-        //console.log('Received message', root);
-
         root.value.list.forEach((element) => {
           if (this.onRootElement === null) {
             console.warn('Dropped root element %o', element);
