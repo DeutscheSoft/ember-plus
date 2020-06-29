@@ -47,7 +47,7 @@ export class Device {
   }
 
   _createParameter(parent, element) {
-    const parameter = Parameter.from(parent, element);
+    const parameter = Parameter.from(parent, element, this.separator);
 
     this._registerNode(parameter);
 
@@ -55,7 +55,7 @@ export class Device {
   }
 
   _createNode(parent, element) {
-    const node = Node.from(parent, element);
+    const node = Node.from(parent, element, this.separator);
 
     this._registerNode(node);
 
@@ -231,14 +231,14 @@ export class Device {
   }
 
   _increaseObserverCount(path) {
-    const a = path.split('/');
+    const a = path.split(this.separator);
     const observerCount = this._observerCount;
 
     const hasNode = !!this.getNodeByPath(path);
     let lastNode = null;
 
     for (let i = 1; i < a.length; i++) {
-      const partialPath = a.slice(0, i).join('/');
+      const partialPath = a.slice(0, i).join(this.separator);
       let n = 0 | observerCount.get(partialPath);
 
       n++;
@@ -256,15 +256,17 @@ export class Device {
 
     if (hasNode) return;
 
-    this.connection.sendGetDirectory(lastNode ? lastNode.getQualifiedNode() : void 0);
+    this.connection.sendGetDirectory(
+      lastNode ? lastNode.getQualifiedNode() : void 0
+    );
   }
 
   _decreaseObserverCount(path) {
-    const a = path.split('/');
+    const a = path.split(this.separator);
     const observerCount = this._observerCount;
 
     for (let i = 1; i < a.length; i++) {
-      const partialPath = a.slice(0, i).join('/');
+      const partialPath = a.slice(0, i).join(this.separator);
       let n = 0 | observerCount.get(partialPath);
 
       if (n > 1) {
@@ -283,8 +285,9 @@ export class Device {
     }
   }
 
-  constructor(connection) {
+  constructor(connection, separator) {
     this.connection = connection;
+    this.separator = separator || '/';
 
     // contains all nodes by TreeNode.key
     this._nodes = new Map();
