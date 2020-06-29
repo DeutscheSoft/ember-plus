@@ -73,7 +73,7 @@ const emberStreamFormat = Enum(
 );
 const emberCommandType = Enum.apply(
   this,
-  new Array(30).concat(['subscribe', 'unsubstribe', 'getDirectory'])
+  new Array(30).concat(['subscribe', 'unsubscribe', 'getDirectory'])
 );
 
 const emberNodeContents = AnonymousStruct({

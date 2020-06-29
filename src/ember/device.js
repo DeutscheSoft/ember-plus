@@ -16,26 +16,50 @@ function getKey(element) {
 }
 
 export class Device {
+  _registerNode(treeNode) {
+    this._nodes.set(treeNode.key, treeNode);
+
+    const identifierPath = treeNode.identifierPath;
+
+    this._nodesByPath.set(identifierPath, treeNode);
+    this._onNodeChanged(identifierPath, treeNode);
+
+    const parent = treeNode.parent;
+
+    if (!parent) return;
+
+    parent.addChild(treeNode);
+  }
+
+  _unregisterNode(treeNode) {
+    this._nodes.delete(treeNode.key);
+
+    const identifierPath = treeNode.identifierPath;
+
+    this._nodesByPath.delete(identifierPath);
+    this._onNodeChanged(identifierPath, null);
+
+    const parent = treeNode.parent;
+
+    if (!parent) return;
+
+    parent.removeChild(treeNode);
+  }
+
   _createParameter(parent, element) {
     const parameter = Parameter.from(parent, element);
 
-    this._nodes.set(parameter.key, parameter);
+    this._registerNode(parameter);
 
-    const identifierPath = parameter.identifierPath;
-
-    this._nodesByPath.set(identifierPath, parameter);
-    this._onNodeChanged(identifierPath, parameter);
+    return parameter;
   }
 
   _createNode(parent, element) {
     const node = Node.from(parent, element);
 
-    this._nodes.set(node.key, node);
+    this._registerNode(node);
 
     const identifierPath = node.identifierPath;
-
-    this._nodesByPath.set(identifierPath, node);
-    this._onNodeChanged(identifierPath, node);
 
     if (this._observerCount.get(identifierPath) > 0) {
       this.connection.sendGetDirectory(node.getQualifiedNode());
@@ -60,9 +84,31 @@ export class Device {
     return parent;
   }
 
+  _removeAllChildren(parentNode) {
+    parentNode.children.forEach((child) => {
+      if (child instanceof Node) {
+        this._removeAllChildren(child);
+      }
+      this._unregisterNode(child);
+    });
+    parentNode.removeAllChildren();
+  }
+
+  _removeNodeRecursively(node) {
+    if (node instanceof Node) this._removeAllChildren(node);
+
+    this._unregisterNode(node);
+  }
+
   _handleNodeElement(nodeElement, parentPath) {
     const path = parentPath.concat([nodeElement.number]);
-    let node = this._nodes.get(path.join('.'));
+    const key = path.join('.');
+    let node = this._nodes.get(key);
+
+    if (node instanceof Parameter) {
+      this._removeNodeRecursively(node);
+      node = null;
+    }
 
     if (!node) {
       const parent = this._getParent(parentPath);
@@ -70,7 +116,13 @@ export class Device {
       node = this._createNode(parent, nodeElement);
     } else {
       // update
-      if (nodeElement.contents) node.updateFrom(nodeElement.contents);
+      if (nodeElement.contents) {
+        node.updateFrom(nodeElement.contents);
+
+        if (!node.isOnline && node.children.length) {
+          this._removeAllChildren(node);
+        }
+      }
     }
 
     if (nodeElement.children === void 0) return;
@@ -84,7 +136,11 @@ export class Device {
     const path = nodeElement.path;
     const node = this._nodes.get(path.join('.'));
 
-    if (!node) throw new Error('Unknown qualified node.');
+    if (!node) {
+      // we do not care about this node
+      this.connection.sendUnsubscribe(nodeElement);
+      return;
+    }
 
     // update
     if (nodeElement.contents) node.updateFrom(nodeElement.contents);
@@ -99,6 +155,11 @@ export class Device {
   _handleParameterElement(parameterElement, parentPath) {
     const path = parentPath.concat([parameterElement.number]);
     let parameter = this._nodes.get(path.join('.'));
+
+    if (parameter instanceof Node) {
+      this._removeNodeRecursively(parameter);
+      parameter = null;
+    }
 
     if (!parameter) {
       const parent = this._getParent(parentPath);
@@ -170,7 +231,7 @@ export class Device {
 
     for (let i = 1; i < a.length; i++) {
       const partialPath = a.slice(0, i).join('/');
-      let n = 0|observerCount.get(partialPath);
+      let n = 0 | observerCount.get(partialPath);
 
       n++;
 
@@ -195,12 +256,20 @@ export class Device {
 
     for (let i = 1; i < a.length; i++) {
       const partialPath = a.slice(0, i).join('/');
-      let n = 0|observerCount.get(partialPath);
+      let n = 0 | observerCount.get(partialPath);
 
       if (n > 1) {
         observerCount.set(partialPath, n - 1);
       } else {
         observerCount.delete(partialPath);
+
+        const node = this.getNodeByPath(partialPath);
+
+        if (!node || !(node instanceof Node)) continue;
+
+        // we are no longer interested in this node, so we remove it
+        this.connection.sendUnsubscribe(node.getQualifiedNode());
+        this._removeNodeRecursively(node);
       }
     }
   }
@@ -240,6 +309,10 @@ export class Device {
       }
     };
     connection.sendKeepaliveRequest();
+  }
+
+  getNodeByPath(path) {
+    return this._nodesByPath.get(path);
   }
 
   observePath(path, callback) {
@@ -301,6 +374,5 @@ export class Device {
     this.connection.sendRoot(parameter.getSetValue(value));
   }
 
-  setEffectiveValue(parameter, value) {
-  }
+  setEffectiveValue(parameter, value) {}
 }

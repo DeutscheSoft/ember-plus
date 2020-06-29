@@ -24,7 +24,13 @@ function toQualifiedNode(node) {
 }
 
 function dispatch(cb) {
-  Promise.resolve().then(cb);
+  Promise.resolve().then(() => {
+    try {
+      cb();
+    } catch (error) {
+      console.error('Error in dispatch:', error);
+    }
+  });
 }
 
 export class EmberConnection {
@@ -96,6 +102,14 @@ export class EmberConnection {
       rootElement = cmd;
     }
     this.sendRoot(rootElement);
+  }
+
+  sendUnsubscribe(node) {
+    const cmd = new emberCommand(['unsubscribe']);
+    const qualifiedNode = toQualifiedNode(node);
+    qualifiedNode.children = new emberElementCollection([cmd]);
+
+    this.sendRoot(qualifiedNode);
   }
 
   onMessage(data, pos) {

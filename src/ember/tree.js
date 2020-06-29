@@ -123,6 +123,7 @@ export class Node extends TreeNode {
     this._description = contents.description;
     this._isRoot = contents.isRoot;
     this._isOnline = contents.isOnline !== false;
+    this.children = [];
   }
 
   static from(parent, node) {
@@ -145,6 +146,31 @@ export class Node extends TreeNode {
         this.propertyChanged(name, value);
       }
     }
+  }
+
+  addChild(child) {
+    const children = this.children;
+    const index = child.number;
+
+    const previous = children[index];
+
+    children[index] = child;
+
+    return previous;
+  }
+
+  removeChild(child) {
+    const children = this.children;
+    const index = child.number;
+    const previous = children[index];
+
+    if (previous !== child) throw new Error('Removing wrong child.');
+
+    children[index] = void 0;
+  }
+
+  removeAllChildren() {
+    this.children.length = 0;
   }
 }
 

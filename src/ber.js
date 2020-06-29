@@ -796,8 +796,7 @@ function StructBase(identifier, properties) {
       const values = tlv.value;
       const args = new Array(property_names.length);
 
-      if (tlv.identifier !== identifier)
-        throw new Error('Type mismatch.');
+      if (tlv.identifier !== identifier) throw new Error('Type mismatch.');
 
       for (let i = 0; i < values.length; i++) {
         let ctlv = values[i];
@@ -879,7 +878,10 @@ export function AnonymousChoice(...types) {
 
   return class {
     static encode(value) {
-      if (typeof value === 'object' && typeof value.application_id === 'number') {
+      if (
+        typeof value === 'object' &&
+        typeof value.application_id === 'number'
+      ) {
         const type = application_types[value.application_id];
 
         if (type === void 0) throw new Error('Choice mismatch.');
@@ -890,19 +892,20 @@ export function AnonymousChoice(...types) {
 
         switch (typeof value) {
           case 'string':
-            if (!universal_types[TYPE_UTF8STRING])
-              break;
+            if (!universal_types[TYPE_UTF8STRING]) break;
             return TLV.UTF8STRING(value);
           case 'number':
-            if (universal_types[TYPE_INTEGER] && isFinite(value) && Math.round(value) === value)
+            if (
+              universal_types[TYPE_INTEGER] &&
+              isFinite(value) &&
+              Math.round(value) === value
+            )
               return TLV.INTEGER(value);
 
-            if (universal_types[TYPE_REAL])
-              return TLV.REAL(value);
+            if (universal_types[TYPE_REAL]) return TLV.REAL(value);
             break;
           case 'boolean':
-            if (universal_types[TYPE_BOOLEAN])
-              return TLV.BOOLEAN(value);
+            if (universal_types[TYPE_BOOLEAN]) return TLV.BOOLEAN(value);
             break;
         }
 
