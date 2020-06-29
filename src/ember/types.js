@@ -71,9 +71,8 @@ const emberStreamFormat = Enum(
   'ieeeFloat64BigEndian',
   'ieeeFloat64LittleEndia'
 );
-const emberCommandType = Enum.apply(
-  this,
-  new Array(30).concat(['subscribe', 'unsubscribe', 'getDirectory'])
+const emberCommandType = Enum(
+  ...new Array(30).concat(['subscribe', 'unsubscribe', 'getDirectory'])
 );
 
 const emberNodeContents = AnonymousStruct({
