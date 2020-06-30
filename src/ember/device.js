@@ -416,4 +416,8 @@ export class Device {
   setEffectiveValue(parameter, value) {
     this.setValue(parameter, parameter.fromEffectiveValue(value));
   }
+
+  close() {
+    this.connection.close();
+  }
 }
