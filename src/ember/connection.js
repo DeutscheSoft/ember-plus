@@ -20,6 +20,22 @@ function toQualifiedNode(node) {
     return emberQualifiedNode.from({
       path: [node.number],
     });
+  } else {
+    throw new TypeError('Expected node.');
+  }
+}
+
+function toQualifiedElement(node) {
+  if (node instanceof emberQualifiedNode) {
+    return emberQualifiedNode.from({
+      path: node.path,
+    });
+  } else if (node instanceof emberQualifiedParameter) {
+    return emberQualifiedParameter.from({
+      path: node.path,
+    });
+  } else {
+    throw new TypeError('Expected qualifiedElement.');
   }
 }
 
