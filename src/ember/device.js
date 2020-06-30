@@ -62,7 +62,7 @@ export class Device {
     const identifierPath = node.identifierPath;
 
     if (this._observerCount.get(identifierPath) > 0) {
-      this.connection.sendGetDirectory(node.getQualifiedNode());
+      this._triggerGetDirectory(node.numericPath);
     }
 
     return node;
@@ -145,7 +145,10 @@ export class Device {
 
   _handleQualifiedNodeElement(nodeElement) {
     const path = nodeElement.path;
-    const node = this._nodes.get(path.join('.'));
+    const key = path.join('.');
+    const node = this._nodes.get(key);
+
+    this._receivedGetDirectory(path);
 
     if (!node) {
       // we do not care about this node
@@ -211,9 +214,14 @@ export class Device {
   }
 
   _handleRootElement(element) {
+    // If we receive nodes or parameters, we assume this was in response to a
+    // getDirectory request. If not, this is not bad, it only means we would
+    // send more getDirectory requests than necessary.
     if (element instanceof emberNode) {
+      this._receivedGetDirectory(null);
       this._handleNodeElement(element, []);
     } else if (element instanceof emberParameter) {
+      this._receivedGetDirectory(null);
       this._handleParameterElement(element, []);
     } else if (element instanceof emberQualifiedNode) {
       this._handleQualifiedNodeElement(element);
@@ -266,9 +274,7 @@ export class Device {
 
     if (hasNode) return;
 
-    this.connection.sendGetDirectory(
-      lastNode ? lastNode.getQualifiedNode() : void 0
-    );
+    this._triggerGetDirectory(lastNode ? lastNode.numericPath : null);
   }
 
   _decreaseObserverCount(path) {
@@ -295,6 +301,31 @@ export class Device {
     }
   }
 
+  _receivedGetDirectory(path) {
+    const key = path === null ? '' : path.join('.');
+    const getDirectoryPending = this._getDirectoryPending;
+    getDirectoryPending.delete(key);
+  }
+
+  _triggerGetDirectory(path) {
+    const key = path === null ? '' : path.join('.');
+    const getDirectoryPending = this._getDirectoryPending;
+
+    if (getDirectoryPending.has(key)) return;
+
+    getDirectoryPending.add(key);
+
+    if (path === null) {
+      this.connection.sendGetDirectory();
+    } else {
+      const qualifiedNode = emberQualifiedNode.from({
+        path: path,
+      });
+
+      this.connection.sendGetDirectory(qualifiedNode);
+    }
+  }
+
   constructor(connection, separator) {
     this.connection = connection;
     this.separator = separator || '/';
@@ -312,7 +343,10 @@ export class Device {
     // This includes all parent paths up to the root
     this._observerCount = new Map();
 
-    connection.sendGetDirectory();
+    // addresses for which a getDirectory request is currently pending
+    this._getDirectoryPending = new Set();
+
+    this._triggerGetDirectory(null);
 
     connection.onerror = (error) => {
       console.error('Error in device connection', error);
