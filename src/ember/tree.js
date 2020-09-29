@@ -44,7 +44,8 @@ class TreeNode {
 
     path = this.identifier;
 
-    if (parent !== null) path = parent.identifierPath + this._separator + path;
+    if (parent !== null && !(parent instanceof RootNode))
+      path = parent.identifierPath + this._separator + path;
 
     this._identifierPath = path;
 
@@ -100,53 +101,10 @@ class TreeNode {
   }
 }
 
-export class Node extends TreeNode {
-  getQualifiedNode() {
-    return emberQualifiedNode.from({
-      path: this.numericPath,
-    });
-  }
-
-  get description() {
-    return this._description;
-  }
-
-  get isRoot() {
-    return this._isRoot;
-  }
-
-  get isOnline() {
-    return this._isOnline;
-  }
-
-  constructor(parent, number, contents, separator) {
-    super(parent, number, contents.identifier, separator);
-    this._description = contents.description;
-    this._isRoot = contents.isRoot;
-    this._isOnline = contents.isOnline !== false;
+class TreeNodeWithChildren extends TreeNode {
+  constructor(parent, number, identifier, separator) {
+    super(parent, number, identifier, separator);
     this.children = [];
-  }
-
-  static from(parent, node, separator) {
-    if (node instanceof emberNode) {
-      return new this(parent, node.number, node.contents, separator);
-    } else if (node instanceof emberQualifiedNode) {
-      const number = node.path[node.path.length - 1];
-      return new this(parent, number, node.contents, separator);
-    } else {
-      throw new TypeError('Unsupported node type.');
-    }
-  }
-
-  updateFrom(contents) {
-    for (let name in contents) {
-      const value = contents[name];
-
-      if (value !== void 0 && value !== this[name]) {
-        this['_' + name] = value;
-        this.propertyChanged(name, value);
-      }
-    }
   }
 
   addChild(child) {
@@ -172,6 +130,69 @@ export class Node extends TreeNode {
 
   removeAllChildren() {
     this.children.length = 0;
+  }
+}
+
+export class Node extends TreeNodeWithChildren {
+  getQualifiedNode() {
+    return emberQualifiedNode.from({
+      path: this.numericPath,
+    });
+  }
+
+  get description() {
+    return this._description;
+  }
+
+  get isRoot() {
+    return this._isRoot;
+  }
+
+  get isOnline() {
+    return this._isOnline;
+  }
+
+  constructor(parent, number, contents, separator) {
+    super(parent, number, contents.identifier, separator);
+    this._description = contents.description;
+    this._isRoot = contents.isRoot;
+    this._isOnline = contents.isOnline !== false;
+  }
+
+  static from(parent, node, separator) {
+    if (node instanceof emberNode) {
+      return new this(parent, node.number, node.contents, separator);
+    } else if (node instanceof emberQualifiedNode) {
+      const number = node.path[node.path.length - 1];
+      return new this(parent, number, node.contents, separator);
+    } else {
+      throw new TypeError('Unsupported node type.');
+    }
+  }
+
+  updateFrom(contents) {
+    for (let name in contents) {
+      const value = contents[name];
+
+      if (value !== void 0 && value !== this[name]) {
+        this['_' + name] = value;
+        this.propertyChanged(name, value);
+      }
+    }
+  }
+}
+
+export class RootNode extends TreeNodeWithChildren {
+  get numericPath() {
+    return [];
+  }
+
+  get identifierPath() {
+    return '/';
+  }
+
+  constructor(separator) {
+    super(null, -1, null, separator);
   }
 }
 

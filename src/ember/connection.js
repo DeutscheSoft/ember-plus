@@ -117,6 +117,7 @@ export class EmberConnection {
     } else {
       rootElement = cmd;
     }
+    console.log('> GetDirectory %O', node && node.path);
     this.sendRoot(rootElement);
   }
 
@@ -125,6 +126,7 @@ export class EmberConnection {
     const qualifiedElement = toQualifiedElement(node);
     qualifiedElement.children = new emberElementCollection([cmd]);
 
+    console.log('> Unsubscribe %O', qualifiedElement.path);
     this.sendRoot(qualifiedElement);
   }
 

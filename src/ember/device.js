@@ -5,7 +5,7 @@ import {
   emberQualifiedNode,
   emberQualifiedParameter,
 } from './types.js';
-import { Node, Parameter } from './tree.js';
+import { Node, Parameter, RootNode } from './tree.js';
 
 function getKey(element) {
   if (element instanceof emberNode || element instanceof emberParameter) {
@@ -54,6 +54,12 @@ export class Device {
     return parameter;
   }
 
+  _createRootNode() {
+    const node = new RootNode(this.separator);
+    this._registerNode(node);
+    return node;
+  }
+
   _createNode(parent, element) {
     const node = Node.from(parent, element, this.separator);
 
@@ -71,15 +77,14 @@ export class Device {
   _getParent(path) {
     let parent;
 
-    if (path.length) {
-      parent = this._nodes.get(path.join('.'));
+    const nodes = this._nodes;
 
-      if (!parent) throw new Error('Could not find parent.');
+    parent = nodes.get(path.join('.'));
 
-      if (!(parent instanceof Node)) throw new Error('Expected Node parent.');
-    } else {
-      parent = null;
-    }
+    if (!parent) throw new Error('Could not find parent.');
+
+    if (!(parent instanceof Node) && !(parent instanceof RootNode))
+      throw new Error('Expected Node parent.');
 
     return parent;
   }
@@ -348,6 +353,8 @@ export class Device {
 
     this._triggerGetDirectory(null);
 
+    this._createRootNode();
+
     connection.onerror = (error) => {
       console.error('Error in device connection', error);
     };
@@ -389,7 +396,7 @@ export class Device {
     const cb = (node) => {
       if (innerSubscription !== null) {
         try {
-          innerSubscfiption();
+          innerSubscription();
         } catch (err) {
           console.error(err);
         }
