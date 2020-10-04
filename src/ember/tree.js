@@ -102,34 +102,52 @@ class TreeNode {
 }
 
 class TreeNodeWithChildren extends TreeNode {
+
+  _notifyChildrenChanged() {
+    if (this._childrenChangedTriggered) return;
+    this._childrenChangedTriggered = true;
+    Promise.resolve().then(() => {
+      this._childrenChangedTriggered = false;
+      this.propertyChanged('children', this.children);
+    });
+  }
+
   constructor(parent, number, identifier, separator) {
     super(parent, number, identifier, separator);
     this.children = [];
+    this._childrenChangedTriggered = false;
   }
 
   addChild(child) {
     const children = this.children;
-    const index = child.number;
+    const index = child.number - 1;
 
     const previous = children[index];
 
     children[index] = child;
+    this._notifyChildrenChanged();
 
     return previous;
   }
 
   removeChild(child) {
     const children = this.children;
-    const index = child.number;
+    const index = child.number - 1;
     const previous = children[index];
 
     if (previous !== child) throw new Error('Removing wrong child.');
 
     children[index] = void 0;
+    this._notifyChildrenChanged();
   }
 
   removeAllChildren() {
     this.children.length = 0;
+    this._notifyChildrenChanged();
+  }
+
+  observeChildren(callback) {
+    return this.observeProperty('children', callback);
   }
 }
 
