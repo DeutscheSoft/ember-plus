@@ -294,6 +294,9 @@ export class TLV {
           let length = 0;
           const identifiers = this.value;
 
+          if (!Array.isArray(identifiers))
+            throw new TypeError('Expected Array<number>.');
+
           for (let i = 0; i < identifiers.length; i++) {
             let n = identifiers[i];
 
