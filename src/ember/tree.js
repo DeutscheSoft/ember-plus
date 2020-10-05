@@ -101,57 +101,53 @@ class TreeNode {
   }
 }
 
-class TreeNodeWithChildren extends TreeNode {
+export class InternalNode extends TreeNode {
 
-  _notifyChildrenChanged() {
-    if (this._childrenChangedTriggered) return;
-    this._childrenChangedTriggered = true;
-    Promise.resolve().then(() => {
-      this._childrenChangedTriggered = false;
-      this.propertyChanged('children', this.children);
-    });
+  get children() {
+    return this._children;
+  }
+
+  set childrenReceived(value) {
+    this._childrenReceived = !!value;
+  }
+
+  get childrenReceived() {
+    return this._childrenReceived;
   }
 
   constructor(parent, number, identifier, separator) {
     super(parent, number, identifier, separator);
-    this.children = [];
-    this._childrenChangedTriggered = false;
+    this._children = [];
+    this._childrenReceived = false;
   }
 
   addChild(child) {
-    const children = this.children;
+    const children = this._children;
     const index = child.number - 1;
 
     const previous = children[index];
 
     children[index] = child;
-    this._notifyChildrenChanged();
 
     return previous;
   }
 
   removeChild(child) {
-    const children = this.children;
+    const children = this._children;
     const index = child.number - 1;
     const previous = children[index];
 
     if (previous !== child) throw new Error('Removing wrong child.');
 
     children[index] = void 0;
-    this._notifyChildrenChanged();
   }
 
   removeAllChildren() {
-    this.children.length = 0;
-    this._notifyChildrenChanged();
-  }
-
-  observeChildren(callback) {
-    return this.observeProperty('children', callback);
+    this._children.length = 0;
   }
 }
 
-export class Node extends TreeNodeWithChildren {
+export class Node extends InternalNode {
   getQualifiedNode() {
     return emberQualifiedNode.from({
       path: this.numericPath,
@@ -200,7 +196,7 @@ export class Node extends TreeNodeWithChildren {
   }
 }
 
-export class RootNode extends TreeNodeWithChildren {
+export class RootNode extends InternalNode {
   get numericPath() {
     return [];
   }

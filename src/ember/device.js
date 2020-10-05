@@ -5,7 +5,7 @@ import {
   emberQualifiedNode,
   emberQualifiedParameter,
 } from './types.js';
-import { Node, Parameter, RootNode } from './tree.js';
+import { InternalNode, Node, Parameter, RootNode } from './tree.js';
 
 function getKey(element) {
   if (element instanceof emberNode || element instanceof emberParameter) {
@@ -22,12 +22,12 @@ export class Device {
     const identifierPath = treeNode.identifierPath;
 
     this._nodesByPath.set(identifierPath, treeNode);
-    this._onNodeChanged(identifierPath, treeNode);
 
     const parent = treeNode.parent;
 
     if (!parent) return;
 
+    this._childrenChanged.add(parent);
     parent.addChild(treeNode);
   }
 
@@ -37,12 +37,14 @@ export class Device {
     const identifierPath = treeNode.identifierPath;
 
     this._nodesByPath.delete(identifierPath);
-    this._onNodeChanged(identifierPath, null);
 
     const parent = treeNode.parent;
 
+    this._notifyDirectoryObservers(treeNode);
+
     if (!parent) return;
 
+    this._childrenChanged.add(parent);
     parent.removeChild(treeNode);
   }
 
@@ -64,12 +66,6 @@ export class Device {
     const node = Node.from(parent, element, this.separator);
 
     this._registerNode(node);
-
-    const identifierPath = node.identifierPath;
-
-    if (this._observerCount.get(identifierPath) > 0) {
-      this._triggerGetDirectory(node.numericPath);
-    }
 
     return node;
   }
@@ -153,8 +149,6 @@ export class Device {
     const key = path.join('.');
     const node = this._nodes.get(key);
 
-    this._receivedGetDirectory(path);
-
     if (!node) {
       // we do not care about this node
       this.connection.sendUnsubscribe(nodeElement);
@@ -223,10 +217,8 @@ export class Device {
     // getDirectory request. If not, this is not bad, it only means we would
     // send more getDirectory requests than necessary.
     if (element instanceof emberNode) {
-      this._receivedGetDirectory(null);
       this._handleNodeElement(element, []);
     } else if (element instanceof emberParameter) {
-      this._receivedGetDirectory(null);
       this._handleParameterElement(element, []);
     } else if (element instanceof emberQualifiedNode) {
       this._handleQualifiedNodeElement(element);
@@ -237,98 +229,45 @@ export class Device {
     }
   }
 
-  _onNodeChanged(path, node) {
-    const observers = this._pathObservers;
-
-    const list = observers.get(path);
-
-    if (list === void 0) return;
-
-    for (let i = 0; i < list.length; i++) {
-      try {
-        list[i](node);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }
-
-  _increaseObserverCount(path) {
-    const a = path.split(this.separator);
-    const observerCount = this._observerCount;
-
-    const hasNode = !!this.getNodeByPath(path);
-    let lastNode = null;
-
-    for (let i = 1; i < a.length; i++) {
-      const partialPath = a.slice(0, i).join(this.separator);
-      let n = 0 | observerCount.get(partialPath);
-
-      n++;
-
-      observerCount.set(partialPath, n);
-
-      if (hasNode) continue;
-
-      const node = this.getNodeByPath(partialPath);
-
-      if (node && node instanceof Node) {
-        lastNode = node;
-      }
-    }
-
-    if (hasNode) return;
-
-    this._triggerGetDirectory(lastNode ? lastNode.numericPath : null);
-  }
-
-  _decreaseObserverCount(path) {
-    const a = path.split(this.separator);
-    const observerCount = this._observerCount;
-
-    for (let i = 1; i < a.length; i++) {
-      const partialPath = a.slice(0, i).join(this.separator);
-      let n = 0 | observerCount.get(partialPath);
-
-      if (n > 1) {
-        observerCount.set(partialPath, n - 1);
-      } else {
-        observerCount.delete(partialPath);
-
-        const node = this.getNodeByPath(partialPath);
-
-        if (!node || !(node instanceof Node)) continue;
-
-        // we are no longer interested in this node, so we remove it
-        this.connection.sendUnsubscribe(node.getQualifiedNode());
-        this._removeNodeRecursively(node);
-      }
-    }
-  }
-
-  _receivedGetDirectory(path) {
-    const key = path === null ? '' : path.join('.');
-    const getDirectoryPending = this._getDirectoryPending;
-    getDirectoryPending.delete(key);
-  }
-
-  _triggerGetDirectory(path) {
-    const key = path === null ? '' : path.join('.');
-    const getDirectoryPending = this._getDirectoryPending;
-
-    if (getDirectoryPending.has(key)) return;
-
-    getDirectoryPending.add(key);
-
-    if (path === null) {
+  _triggerGetDirectory(numericPath) {
+    if (numericPath.length === 0) {
       this.connection.sendGetDirectory();
     } else {
       const qualifiedNode = emberQualifiedNode.from({
-        path: path,
+        path: numericPath,
       });
 
       this.connection.sendGetDirectory(qualifiedNode);
     }
+  }
+
+  _onRootElements(elements) {
+    this._receiving = true;
+
+    try {
+      elements.forEach((element) => {
+        if (element instanceof emberCommand) {
+        } else if (
+          element instanceof emberParameter ||
+          element instanceof emberQualifiedParameter ||
+          element instanceof emberNode ||
+          element instanceof emberQualifiedNode
+        ) {
+          this._handleRootElement(element);
+        } else {
+          console.warn('Ignored root element', element);
+        }
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      this._receiving = false;
+      this._processChildrenChanged();
+    }
+  }
+
+  get root() {
+    return this._root;
   }
 
   constructor(connection, separator) {
@@ -339,37 +278,26 @@ export class Device {
     this._nodes = new Map();
 
     // contains all nodes by TreeNode.identifierPath
+    // Map<Node.identifierPath, Node>
     this._nodesByPath = new Map();
 
-    // contains subscribers for a given path
-    this._pathObservers = new Map();
+    // Map<Node, Set<function>>
+    this._directoryObservers = new Map();
 
-    // contains counts of observers for each identifierPath.
-    // This includes all parent paths up to the root
-    this._observerCount = new Map();
+    // Contains all nodes for which new children
+    // have been received.
+    // Set<Node>
+    this._childrenChanged = new Set();
 
-    // addresses for which a getDirectory request is currently pending
-    this._getDirectoryPending = new Set();
+    this._root = this._createRootNode();
 
-    this._triggerGetDirectory(null);
-
-    this._createRootNode();
+    this._receiving = false;
 
     connection.onerror = (error) => {
       console.error('Error in device connection', error);
     };
-    connection.onRootElement = (element) => {
-      if (element instanceof emberCommand) {
-      } else if (
-        element instanceof emberParameter ||
-        element instanceof emberQualifiedParameter ||
-        element instanceof emberNode ||
-        element instanceof emberQualifiedNode
-      ) {
-        this._handleRootElement(element);
-      } else {
-        console.warn('Ignored root element', element);
-      }
+    connection.onRootElements = (elements) => {
+      this._onRootElements(elements);
     };
     connection.sendKeepaliveRequest();
   }
@@ -378,58 +306,99 @@ export class Device {
     return this._nodesByPath.get(path);
   }
 
-  observePath(path, callback) {
-    if (typeof path !== 'string') throw new TypeError('Expected string.');
-    if (typeof callback !== 'function')
-      throw new TypeError('Expected function.');
+  _notifyDirectoryObservers(node) {
+    const observers = this._directoryObservers.get(node);
 
-    const observers = this._pathObservers;
+    if (!observers) return;
 
-    let list = observers.get(path);
+    const deleted = this._nodes.get(node.key) !== node;
 
-    let innerSubscription = null;
-
-    if (!list) {
-      observers.set(path, (list = []));
-    }
-
-    const cb = (node) => {
-      if (innerSubscription !== null) {
-        try {
-          innerSubscription();
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      innerSubscription = callback(node) || null;
-    };
-
-    list.push(cb);
-
-    const node = this._nodesByPath.get(path);
-
-    if (node !== void 0) {
+    observers.forEach((callback) => {
       try {
-        cb(node);
-      } catch (error) {
-        console.log(error);
+        callback(deleted ? null : node);
+      } catch (err) {
+        console.error(err);
       }
+    });
+  }
+
+  _processChildrenChanged() {
+    const childrenChanged = this._childrenChanged;
+    const children = Array.from(childrenChanged);
+    childrenChanged.clear();
+
+    // TODO: need to sort by tree order?
+    // children.sort((nodea, nodeb) => {});
+    children.forEach((node) => {
+      node.childrenReceived = true;
+      this._notifyDirectoryObservers(node);
+    });
+  }
+
+  /**
+   * Observes directory changes of the given node. The callback
+   * will be called whenever the children of this node change
+   * and once initially if children have already been received.
+   *
+   * When the given node is removed (e.g. because a parent node
+   * has gone offline), the callback is called with null.
+   */
+  observeDirectory(arg, callback) {
+    if (typeof callback !== 'function')
+      throw new Error('Expected callback function.');
+
+    let node;
+
+    if (typeof arg === 'object') {
+      node = arg;
+
+      if (node !== this._nodes.get(node.key))
+        throw new TypeError('Node does not belong to this device.');
+
+    } else if (typeof args === 'string') {
+      node = getNodeByPath(arg);
+
+      if (!node)
+        throw new Error('Unknown node.');
+    } else {
+      throw new TypeError('Expected Node or string.');
     }
 
-    this._increaseObserverCount(path);
+    if (!(node instanceof InternalNode))
+      throw new TypeError('Expected node.');
+
+
+    const directoryObservers = this._directoryObservers;
+
+    let observers = directoryObservers.get(node);
+
+    if (!observers) {
+      directoryObservers.set(node, observers = new Set());
+      this._triggerGetDirectory(node.numericPath);
+    }
+
+    observers.add(callback);
+
+    if (node.childrenReceived) {
+      try {
+        callback(node);
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
     return () => {
-      if (callback === null) return;
-      callback = null;
-      const observers = this._pathObservers;
-      const list = observers.get(path);
+      if (node === null) return;
 
-      observers.set(
-        path,
-        list.filter((_cb) => _cb !== cb)
-      );
-      this._decreaseObserverCount(path);
+      // The node was removed.
+      if (this._nodes.get(node.key) !== node) return;
+      observers.delete(callback);
+
+      if (!observers.size) {
+        directoryObservers.delete(node);
+      }
+
+      node = null;
     };
   }
 

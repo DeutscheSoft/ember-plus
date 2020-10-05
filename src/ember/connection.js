@@ -50,12 +50,24 @@ function dispatch(cb) {
 }
 
 export class EmberConnection {
+
+  set onRootElements(callback) {
+    if (typeof callback !== 'function') {
+      throw new TypeError('Expected function.');
+    }
+    this._onRootElements = callback;
+  }
+
+  get onRootElements() {
+    return this._onRootElements;
+  }
+
   constructor() {
     this._frameDecoder = new S101FrameDecoder();
     this._fragments = null;
     this._rootElements = [];
     this.batch = 5;
-    this.onRootElement = null;
+    this._onRootElements = null;
   }
 
   send(buf) {
@@ -117,7 +129,6 @@ export class EmberConnection {
     } else {
       rootElement = cmd;
     }
-    console.log('> GetDirectory %O', node && node.path);
     this.sendRoot(rootElement);
   }
 
@@ -126,7 +137,6 @@ export class EmberConnection {
     const qualifiedElement = toQualifiedElement(node);
     qualifiedElement.children = new emberElementCollection([cmd]);
 
-    console.log('> Unsubscribe %O', qualifiedElement.path);
     this.sendRoot(qualifiedElement);
   }
 
@@ -137,17 +147,15 @@ export class EmberConnection {
         [tlv, pos] = TLV.decode_from(data, pos);
         const root = emberRoot.decode(tlv);
 
-        root.value.list.forEach((element) => {
-          if (this.onRootElement === null) {
-            console.warn('Dropped root element %o', element);
-          }
+        if (this.onRootElements === null) {
+          console.warn('Dropped root element %o', element);
+        }
 
-          try {
-            this.onRootElement(element);
-          } catch (error) {
-            console.error(error);
-          }
-        });
+        try {
+          this.onRootElements(root.value.list);
+        } catch (error) {
+          console.error(error);
+        }
       }
     } catch (error) {
       console.error('Error in onMessage', error);
