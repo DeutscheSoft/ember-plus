@@ -42,10 +42,10 @@ class TreeNode {
 
     const parent = this._parent;
 
-    path = this.identifier;
+    path = [this.identifier];
 
     if (parent !== null && !(parent instanceof RootNode))
-      path = parent.identifierPath + this._separator + path;
+      path = parent.identifierPath.concat(path);
 
     this._identifierPath = path;
 
@@ -56,7 +56,7 @@ class TreeNode {
     return this._key;
   }
 
-  constructor(parent, number, identifier, separator) {
+  constructor(parent, number, identifier) {
     this._parent = parent || null;
     this._number = number;
     this._identifier = identifier;
@@ -64,7 +64,6 @@ class TreeNode {
     this._identifierPath = null;
     this._key = this.numericPath.join('.');
     this._propertyObservers = [];
-    this._separator = separator;
   }
 
   subscribePropertyChanged(callback) {
@@ -115,8 +114,8 @@ export class InternalNode extends TreeNode {
     return this._childrenReceived;
   }
 
-  constructor(parent, number, identifier, separator) {
-    super(parent, number, identifier, separator);
+  constructor(parent, number, identifier) {
+    super(parent, number, identifier);
     this._children = [];
     this._childrenReceived = false;
   }
@@ -166,19 +165,19 @@ export class Node extends InternalNode {
     return this._isOnline;
   }
 
-  constructor(parent, number, contents, separator) {
-    super(parent, number, contents.identifier, separator);
+  constructor(parent, number, contents) {
+    super(parent, number, contents.identifier);
     this._description = contents.description;
     this._isRoot = contents.isRoot;
     this._isOnline = contents.isOnline !== false;
   }
 
-  static from(parent, node, separator) {
+  static from(parent, node) {
     if (node instanceof emberNode) {
-      return new this(parent, node.number, node.contents, separator);
+      return new this(parent, node.number, node.contents);
     } else if (node instanceof emberQualifiedNode) {
       const number = node.path[node.path.length - 1];
-      return new this(parent, number, node.contents, separator);
+      return new this(parent, number, node.contents);
     } else {
       throw new TypeError('Unsupported node type.');
     }
@@ -202,11 +201,11 @@ export class RootNode extends InternalNode {
   }
 
   get identifierPath() {
-    return '/';
+    return [];
   }
 
-  constructor(separator) {
-    super(null, -1, null, separator);
+  constructor() {
+    super(null, -1, null);
   }
 }
 
@@ -327,8 +326,8 @@ export class Parameter extends TreeNode {
     return value;
   }
 
-  constructor(parent, number, contents, separator) {
-    super(parent, number, contents.identifier, separator);
+  constructor(parent, number, contents) {
+    super(parent, number, contents.identifier);
     this._description = contents.description;
     this._value = contents.value;
     this._minimum = contents.minimum;
@@ -358,12 +357,12 @@ export class Parameter extends TreeNode {
     }
   }
 
-  static from(parent, parameter, separator) {
+  static from(parent, parameter) {
     if (parameter instanceof emberParameter) {
-      return new this(parent, parameter.number, parameter.contents, separator);
+      return new this(parent, parameter.number, parameter.contents);
     } else if (parameter instanceof emberQualifiedParameter) {
       const number = parameter.path[parameter.path.length - 1];
-      return new this(parent, number, parameter.contents, separator);
+      return new this(parent, number, parameter.contents);
     } else {
       throw new TypeError('Unsupported parameter type.');
     }

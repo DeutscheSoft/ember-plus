@@ -21,8 +21,6 @@ export class Device {
 
     const identifierPath = treeNode.identifierPath;
 
-    this._nodesByPath.set(identifierPath, treeNode);
-
     const parent = treeNode.parent;
 
     if (!parent) return;
@@ -36,8 +34,6 @@ export class Device {
 
     const identifierPath = treeNode.identifierPath;
 
-    this._nodesByPath.delete(identifierPath);
-
     const parent = treeNode.parent;
 
     this._notifyDirectoryObservers(treeNode);
@@ -49,7 +45,7 @@ export class Device {
   }
 
   _createParameter(parent, element) {
-    const parameter = Parameter.from(parent, element, this.separator);
+    const parameter = Parameter.from(parent, element);
 
     this._registerNode(parameter);
 
@@ -57,13 +53,13 @@ export class Device {
   }
 
   _createRootNode() {
-    const node = new RootNode(this.separator);
+    const node = new RootNode();
     this._registerNode(node);
     return node;
   }
 
   _createNode(parent, element) {
-    const node = Node.from(parent, element, this.separator);
+    const node = Node.from(parent, element);
 
     this._registerNode(node);
 
@@ -270,16 +266,11 @@ export class Device {
     return this._root;
   }
 
-  constructor(connection, separator) {
+  constructor(connection) {
     this.connection = connection;
-    this.separator = separator || '/';
 
     // contains all nodes by TreeNode.key
     this._nodes = new Map();
-
-    // contains all nodes by TreeNode.identifierPath
-    // Map<Node.identifierPath, Node>
-    this._nodesByPath = new Map();
 
     // Map<Node, Set<function>>
     this._directoryObservers = new Map();
@@ -300,10 +291,6 @@ export class Device {
       this._onRootElements(elements);
     };
     connection.sendKeepaliveRequest();
-  }
-
-  getNodeByPath(path) {
-    return this._nodesByPath.get(path);
   }
 
   _notifyDirectoryObservers(node) {
