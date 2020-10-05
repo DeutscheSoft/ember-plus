@@ -101,7 +101,6 @@ class TreeNode {
 }
 
 export class InternalNode extends TreeNode {
-
   get children() {
     return this._children;
   }

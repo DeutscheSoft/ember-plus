@@ -50,7 +50,6 @@ function dispatch(cb) {
 }
 
 export class EmberConnection {
-
   set onRootElements(callback) {
     if (typeof callback !== 'function') {
       throw new TypeError('Expected function.');

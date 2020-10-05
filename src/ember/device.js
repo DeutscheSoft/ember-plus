@@ -341,26 +341,22 @@ export class Device {
 
       if (node !== this._nodes.get(node.key))
         throw new TypeError('Node does not belong to this device.');
-
     } else if (typeof args === 'string') {
       node = getNodeByPath(arg);
 
-      if (!node)
-        throw new Error('Unknown node.');
+      if (!node) throw new Error('Unknown node.');
     } else {
       throw new TypeError('Expected Node or string.');
     }
 
-    if (!(node instanceof InternalNode))
-      throw new TypeError('Expected node.');
-
+    if (!(node instanceof InternalNode)) throw new TypeError('Expected node.');
 
     const directoryObservers = this._directoryObservers;
 
     let observers = directoryObservers.get(node);
 
     if (!observers) {
-      directoryObservers.set(node, observers = new Set());
+      directoryObservers.set(node, (observers = new Set()));
       this._triggerGetDirectory(node.numericPath);
     }
 
