@@ -1,7 +1,14 @@
 import { EmberConnection } from './connection.js';
 import { createConnection } from 'net';
 
+/**
+ * A Ember+ TCP Connection.
+ */
 export class TCPConnection extends EmberConnection {
+  /**
+   * @param {net.Socket} socket
+   *    The connected socket.
+   */
   constructor(socket) {
     super();
     this.socket = socket;
@@ -20,10 +27,14 @@ export class TCPConnection extends EmberConnection {
     });
   }
 
+  /** @internal */
   write(buffer) {
     this.socket.write(new Uint8Array(buffer));
   }
 
+  /**
+   * Close this connection.
+   */
   close() {
     super.close();
     try {
@@ -31,6 +42,15 @@ export class TCPConnection extends EmberConnection {
     } catch (err) {}
   }
 
+  /**
+   * Connect to the host.
+   *
+   * @params {Object} options
+   *    The destination options. This is passed as first parameter to
+   *    `net.createConnection`.
+   *
+   * @returns {Promise<TCPConnection>
+   */
   static connect(options) {
     return new Promise((resolve, reject) => {
       let socket;
