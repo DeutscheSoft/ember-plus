@@ -89,7 +89,7 @@ export class EmberConnection {
       throw new TypeError('Expected time interval.');
     this.clearKeepaliveInterval();
     this._keepAliveID = setInterval(() => {
-      this._triggerKeepalive();
+      this._triggerKeepalive(time);
     }, time / 2);
   }
 
