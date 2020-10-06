@@ -323,6 +323,15 @@ export class Device {
   }
 
   /**
+   * Call EmberConnection.setKeepaliveInterval().
+   *
+   * @param {number} time - Keepalive interval in milliseconds.
+   */
+  setKeepaliveInterval(time) {
+    this.connection.setKeepaliveInterval(time);
+  }
+
+  /**
    * Observes directory changes of the given node. The callback
    * will be called whenever the children of this node change
    * and once initially if children have already been received.

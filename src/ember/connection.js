@@ -67,9 +67,34 @@ export class EmberConnection {
     this._rootElements = [];
     this.batch = 5;
     this._onRootElements = null;
+    this._txTime = performance.now();
+    this._keepAliveID = -1;
+  }
+
+  clearKeepaliveInterval() {
+    const id = this._keepAliveID;
+
+    if (id === -1) return;
+    this._keepAliveID = -1;
+    clearInterval(id);
+  }
+
+  _triggerKeepalive(time) {
+    if (performance.now() - this._txTime >= time)
+      this.sendKeepaliveRequest();
+  }
+
+  setKeepaliveInterval(time) {
+    if (!(time > 0))
+      throw new TypeError('Expected time interval.');
+    this.clearKeepaliveInterval();
+    this._keepAliveID = setInterval(() => {
+      this._triggerKeepalive();
+    }, time / 2);
   }
 
   send(buf) {
+    this._txTime = performance.now();
     this.write(S101EncodeFrame(buf));
   }
 
@@ -265,6 +290,7 @@ export class EmberConnection {
   }
 
   teardown(err) {
+    this.clearKeepaliveInterval();
     this.close();
   }
 
