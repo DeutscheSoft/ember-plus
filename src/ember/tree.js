@@ -290,8 +290,18 @@ export class Parameter extends TreeNode {
   }
 
   get effectiveValue() {
-    const value = this._value;
+    return this.toEffectiveValue(this._value);
+  }
 
+  get effectiveMinimum() {
+    return this.toEffectiveValue(this._minimum);
+  }
+
+  get effectiveMaximum() {
+    return this.toEffectiveValue(this._maximum);
+  }
+
+  toEffectiveValue(value) {
     if (value === void 0) return this._default;
 
     const factor = this._factor;
@@ -368,12 +378,20 @@ export class Parameter extends TreeNode {
   }
 
   observeEffectiveValue(callback) {
-    const value = this.effectiveValue;
+    return this.observeProperty('value', (value) => {
+      callback(this.toEffectiveValue(value));
+    });
+  }
 
-    if (value !== void 0) callback(value);
+  observeEffectiveMinimum(callback) {
+    return this.observeProperty('minimum', (value) => {
+      callback(this.toEffectiveValue(value));
+    });
+  }
 
-    return this.subscribePropertyChanged(() => {
-      callback(this.effectiveValue);
+  observeEffectiveMaximum(callback) {
+    return this.observeProperty('maximum', (value) => {
+      callback(this.toEffectiveValue(value));
     });
   }
 }
