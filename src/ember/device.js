@@ -393,6 +393,9 @@ export class Device {
    * @return void
    */
   setValue(parameter, value) {
+    if (parameter !== this._nodes.get(parameter.key))
+      throw new TypeError('Parameter does not belong to this device.');
+
     this.connection.sendRoot(parameter.getSetValue(value));
   }
 
@@ -407,6 +410,9 @@ export class Device {
    * @return void
    */
   setEffectiveValue(parameter, value) {
+    if (parameter !== this._nodes.get(parameter.key))
+      throw new TypeError('Parameter does not belong to this device.');
+
     this.setValue(parameter, parameter.fromEffectiveValue(value));
   }
 
