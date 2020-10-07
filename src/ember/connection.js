@@ -61,13 +61,17 @@ export class EmberConnection {
     return this._onRootElements;
   }
 
+  now() {
+    return performance.now();
+  }
+
   constructor() {
     this._frameDecoder = new S101FrameDecoder();
     this._fragments = null;
     this._rootElements = [];
     this.batch = 5;
     this._onRootElements = null;
-    this._txTime = performance.now();
+    this._txTime = this.now();
     this._keepAliveID = -1;
   }
 
@@ -80,7 +84,7 @@ export class EmberConnection {
   }
 
   _triggerKeepalive(time) {
-    if (performance.now() - this._txTime >= time)
+    if (this.now() - this._txTime >= time)
       this.sendKeepaliveRequest();
   }
 
@@ -94,7 +98,7 @@ export class EmberConnection {
   }
 
   send(buf) {
-    this._txTime = performance.now();
+    this._txTime = this.now();
     this.write(S101EncodeFrame(buf));
   }
 

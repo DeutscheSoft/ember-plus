@@ -1,5 +1,6 @@
 import { EmberConnection } from './connection.js';
 import { createConnection } from 'net';
+import { performance } from 'perf_hooks';
 
 /**
  * A Ember+ TCP Connection.
@@ -25,6 +26,10 @@ export class TCPConnection extends EmberConnection {
         this.teardown(err);
       }
     });
+  }
+
+  now() {
+    return performance.now();
   }
 
   /** @internal */
