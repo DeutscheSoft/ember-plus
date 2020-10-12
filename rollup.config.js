@@ -15,8 +15,9 @@ export default [
       name: 'EmberPlus',
       globals: {
         net: 'net',
+        perf_hooks: 'perf_hooks',
       },
     },
-    external: [ 'net' ],
+    external: [ 'net', 'perf_hooks' ],
   },
 ];
