@@ -2,13 +2,16 @@ import { TCPConnection, Device, Parameter } from '../src/index.js';
 
 async function connect(options) {
   const connection = await TCPConnection.connect(options);
+  connection.batch = 1;
   const device = new Device(connection);
 
   const handleNode = (node) => {
-    console.log('handleNode', node.identifierPath);
     node.children.forEach((child) => {
       if (child instanceof Parameter) {
-        console.log('paramter %o', child.identifierPath);
+        const path = child.identifierPath.join('/');
+        device.observeProperty(child, 'value', (value) => {
+          console.log('%o -> %o', path, value);
+        });
       } else {
         device.observeDirectory(child, handleNode);
       }
