@@ -157,7 +157,7 @@ const emberRootElement = AnonymousChoice(
 ); // TODO: also matrix
 export const emberRootElementCollection = SequenceOf(11, emberRootElement);
 
-const emberStreamEntry = Struct(5, {
+export const emberStreamEntry = Struct(5, {
   streamIdentifier: TYPE_INTEGER,
   streamValue: emberValue,
 });

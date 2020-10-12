@@ -4,6 +4,7 @@ import {
   emberParameter,
   emberQualifiedNode,
   emberQualifiedParameter,
+  emberStreamEntry,
 } from './types.js';
 import { InternalNode, Node, Parameter, RootNode } from './tree.js';
 
@@ -19,6 +20,10 @@ export class Device {
   _registerNode(treeNode) {
     this._nodes.set(treeNode.key, treeNode);
 
+    if (treeNode instanceof Parameter && treeNode.streamIdentifier !== void 0) {
+      this._streamParameters.set(treeNode.streamIdentifier, treeNode);
+    }
+
     const identifierPath = treeNode.identifierPath;
 
     const parent = treeNode.parent;
@@ -31,6 +36,10 @@ export class Device {
 
   _unregisterNode(treeNode) {
     this._nodes.delete(treeNode.key);
+
+    if (treeNode instanceof Parameter && treeNode.streamIdentifier !== void 0) {
+      this._streamParameters.delete(treeNode.streamIdentifier);
+    }
 
     const identifierPath = treeNode.identifierPath;
 
@@ -237,6 +246,20 @@ export class Device {
     }
   }
 
+  _triggerSubscribe(numericPath) {
+    const qualifiedParameter = emberQualifiedParameter.from({
+      path: numericPath,
+    });
+    this.connection.sendSubscribe(qualifiedParameter);
+  }
+
+  _triggerUnsubscribe(numericPath) {
+    const qualifiedParameter = emberQualifiedParameter.from({
+      path: numericPath,
+    });
+    this.connection.sendUnsubscribe(qualifiedParameter);
+  }
+
   _onRootElements(elements) {
     this._receiving = true;
 
@@ -250,6 +273,15 @@ export class Device {
           element instanceof emberQualifiedNode
         ) {
           this._handleRootElement(element);
+        } else if (element instanceof emberStreamEntry) {
+          const identifier = element.streamIdentifier;
+          const value = element.streamValue;
+
+          const parameter = this._streamParameters.get(identifier);
+
+          if (!parameter) return;
+
+          parameter.updateValue(value);
         } else {
           console.warn('Ignored root element', element);
         }
@@ -274,6 +306,12 @@ export class Device {
 
     // Map<Node, Set<function>>
     this._directoryObservers = new Map();
+
+    // Map<number, Parameter>
+    this._streamParameters = new Map();
+
+    // Map<Node, Set<function>>
+    this._streamObservers = new Map();
 
     // Contains all nodes for which new children
     // have been received.
@@ -331,18 +369,7 @@ export class Device {
     this.connection.setKeepaliveInterval(time);
   }
 
-  /**
-   * Observes directory changes of the given node. The callback
-   * will be called whenever the children of this node change
-   * and once initially if children have already been received.
-   *
-   * When the given node is removed (e.g. because a parent node
-   * has gone offline), the callback is called with null.
-   */
-  observeDirectory(arg, callback) {
-    if (typeof callback !== 'function')
-      throw new Error('Expected callback function.');
-
+  _findNode(arg) {
     let node;
 
     if (typeof arg === 'object') {
@@ -357,6 +384,23 @@ export class Device {
     } else {
       throw new TypeError('Expected Node or string.');
     }
+
+    return node;
+  }
+
+  /**
+   * Observes directory changes of the given node. The callback
+   * will be called whenever the children of this node change
+   * and once initially if children have already been received.
+   *
+   * When the given node is removed (e.g. because a parent node
+   * has gone offline), the callback is called with null.
+   */
+  observeDirectory(arg, callback) {
+    if (typeof callback !== 'function')
+      throw new Error('Expected callback function.');
+
+    const node = this._findNode(arg);
 
     if (!(node instanceof InternalNode)) throw new TypeError('Expected node.');
 
@@ -392,6 +436,52 @@ export class Device {
 
       node = null;
     };
+  }
+
+  /**
+   * Observes the given property inside of the given node.
+   */
+  observeProperty(node, propertyName, callback) {
+    node = this._findNode(node);
+
+    if (node instanceof RootNode) {
+      throw new Error('Cannot subscribe to properties of the root node.');
+    } else if (node instanceof Node) {
+      return node.observeProperty(propertyName, callback);
+    } else if (node instanceof Parameter) {
+      const sub = node.observeProperty(propertyName, callback);
+
+      if (propertyName !== 'value' || node.streamIdentifier === void 0)
+        return sub;
+
+      const streamObservers = this._streamObservers;
+
+      let observers = streamObservers.get(node);
+
+      if (!observers) {
+        streamObservers.set(node, (observers = new Set()));
+        this._triggerSubscribe(node.numericPath);
+      }
+
+      observers.add(callback);
+
+      return () => {
+        if (node === null) return;
+
+        if (sub !== null) sub();
+
+        // The node was removed.
+        if (this._nodes.get(node.key) !== node) return;
+        observers.delete(callback);
+
+        if (!observers.size) {
+          streamObservers.delete(node);
+          this._triggerUnsubscribe(node.numericPath);
+        }
+
+        node = null;
+      };
+    }
   }
 
   /**

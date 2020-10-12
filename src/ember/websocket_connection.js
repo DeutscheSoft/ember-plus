@@ -11,9 +11,7 @@ export class WebSocketConnection extends EmberConnection {
    *    The WebSocket connection. Needs to be in open state.
    */
   constructor(ws) {
-
-    if (!(ws instanceof WebSocket))
-      throw new TypeError('Expected WebSocket.');
+    if (!(ws instanceof WebSocket)) throw new TypeError('Expected WebSocket.');
 
     if (ws.readyState !== WebSocket.OPEN)
       throw new Error('Expected WebSocket to be in OPEN state.');

@@ -571,6 +571,12 @@ export class Parameter extends TreeNode {
   }
 
   /** @internal */
+  updateValue(value) {
+    this._value = value;
+    this.propertyChanged('value', value);
+  }
+
+  /** @internal */
   static from(parent, parameter) {
     if (parameter instanceof emberParameter) {
       return new this(parent, parameter.number, parameter.contents);

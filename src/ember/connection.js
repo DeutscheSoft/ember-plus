@@ -58,7 +58,6 @@ function encodeEmberFrame(tlv) {
   return S101EncodeFrame(u8.buffer);
 }
 
-
 export class EmberConnection {
   set onRootElements(callback) {
     if (typeof callback !== 'function') {
@@ -94,13 +93,11 @@ export class EmberConnection {
   }
 
   _triggerKeepalive(time) {
-    if (this.now() - this._txTime >= time)
-      this.sendKeepaliveRequest();
+    if (this.now() - this._txTime >= time) this.sendKeepaliveRequest();
   }
 
   setKeepaliveInterval(time) {
-    if (!(time > 0))
-      throw new TypeError('Expected time interval.');
+    if (!(time > 0)) throw new TypeError('Expected time interval.');
     this.clearKeepaliveInterval();
     this._keepAliveID = setInterval(() => {
       this._triggerKeepalive(time);
@@ -142,7 +139,10 @@ export class EmberConnection {
     if (frames.length === 1) {
       this.write(frames[0]);
     } else {
-      const length = frames.reduce((length, buffer) => length + buffer.byteLength, 0);
+      const length = frames.reduce(
+        (length, buffer) => length + buffer.byteLength,
+        0
+      );
       const buffer = new ArrayBuffer(length);
       const a8 = new Uint8Array(buffer);
 
@@ -182,6 +182,14 @@ export class EmberConnection {
 
   sendUnsubscribe(node) {
     const cmd = new emberCommand(['unsubscribe']);
+    const qualifiedElement = toQualifiedElement(node);
+    qualifiedElement.children = new emberElementCollection([cmd]);
+
+    this.sendRoot(qualifiedElement);
+  }
+
+  sendSubscribe(node) {
+    const cmd = new emberCommand(['subscribe']);
     const qualifiedElement = toQualifiedElement(node);
     qualifiedElement.children = new emberElementCollection([cmd]);
 
