@@ -106,7 +106,6 @@ export class EmberConnection {
 
   write(buf) {
     this._txTime = this.now();
-    console.log('written %d bytes.', buf.byteLength);
   }
 
   sendKeepaliveRequest() {
