@@ -41,6 +41,7 @@ export class WebSocketConnection extends EmberConnection {
 
   /** @internal */
   write(buffer) {
+    super.write(buffer);
     this.ws.send(buffer);
   }
 

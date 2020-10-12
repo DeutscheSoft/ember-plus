@@ -49,6 +49,16 @@ function dispatch(cb) {
   });
 }
 
+function encodeEmberFrame(tlv) {
+  const buf = tlv.encode();
+  const u8 = new Uint8Array(9 + buf.byteLength);
+  u8.set([0, 0x0e, 0x00, 0x01, 0xc0, 0x01, 0x02, 31, 0x02], 0);
+  u8.set(new Uint8Array(buf), 9);
+
+  return S101EncodeFrame(u8.buffer);
+}
+
+
 export class EmberConnection {
   set onRootElements(callback) {
     if (typeof callback !== 'function') {
@@ -97,43 +107,53 @@ export class EmberConnection {
     }, time / 2);
   }
 
-  send(buf) {
+  write(buf) {
     this._txTime = this.now();
-    this.write(S101EncodeFrame(buf));
+    console.log('written %d bytes.', buf.byteLength);
   }
 
   sendKeepaliveRequest() {
     const u8 = Uint8Array.from([0, 0x0e, 0x01, 0x01]);
 
-    this.send(u8.buffer);
+    this.write(S101EncodeFrame(u8.buffer));
   }
 
   sendKeepaliveResponse() {
     const u8 = Uint8Array.from([0, 0x0e, 0x02, 0x01]);
 
-    this.send(u8.buffer);
-  }
-
-  sendEmber(tlv) {
-    const buf = tlv.encode();
-    const u8 = new Uint8Array(9 + buf.byteLength);
-    u8.set([0, 0x0e, 0x00, 0x01, 0xc0, 0x01, 0x02, 31, 0x02], 0);
-    u8.set(new Uint8Array(buf), 9);
-
-    this.send(u8.buffer);
+    this.write(S101EncodeFrame(u8.buffer));
   }
 
   flushRoot() {
     const rootElements = this._rootElements;
     const N = this.batch;
+    const frames = [];
 
     for (let i = 0; i < rootElements.length; i += N) {
       const list = rootElements.slice(i, i + N);
       const collection = new emberRootElementCollection(list);
       const root = new emberRoot(collection);
-      this.sendEmber(root.encode());
+      frames.push(encodeEmberFrame(root.encode()));
     }
     rootElements.length = 0;
+
+    if (!frames.length) return;
+
+    if (frames.length === 1) {
+      this.write(frames[0]);
+    } else {
+      const length = frames.reduce((length, buffer) => length + buffer.byteLength, 0);
+      const buffer = new ArrayBuffer(length);
+      const a8 = new Uint8Array(buffer);
+
+      for (let i = 0, pos = 0; i < frames.length; i++) {
+        const chunk = new Uint8Array(frames[i]);
+        a8.set(chunk, pos);
+        pos += chunk.length;
+      }
+
+      this.write(buffer);
+    }
   }
 
   sendRoot(rootElement) {

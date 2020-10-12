@@ -34,6 +34,7 @@ export class TCPConnection extends EmberConnection {
 
   /** @internal */
   write(buffer) {
+    super.write(buffer);
     this.socket.write(new Uint8Array(buffer));
   }
 
