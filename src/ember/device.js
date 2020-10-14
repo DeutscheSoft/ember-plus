@@ -424,7 +424,7 @@ export class Device {
     }
 
     return () => {
-      if (node === null) return;
+      if (callback === null) return;
 
       // The node was removed.
       if (this._nodes.get(node.key) !== node) return;
@@ -434,7 +434,7 @@ export class Device {
         directoryObservers.delete(node);
       }
 
-      node = null;
+      callback = null;
     };
   }
 
@@ -466,7 +466,7 @@ export class Device {
       observers.add(callback);
 
       return () => {
-        if (node === null) return;
+        if (callback === null) return;
 
         if (sub !== null) sub();
 
@@ -479,7 +479,7 @@ export class Device {
           this._triggerUnsubscribe(node.numericPath);
         }
 
-        node = null;
+        callback = null;
       };
     }
   }
