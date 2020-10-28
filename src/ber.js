@@ -2,6 +2,14 @@
  * Some subset of BER encoding needed for Ember+
  */
 
+import { split_float64, join_float64 } from './ber/real.js';
+import {
+  integer_encoded_length,
+  integer_encode,
+  integer_decode,
+} from './ber/integer.js';
+import { real_encoded_length, real_encode, real_decode } from './ber/real.js';
+
 // there are more types but this is what ember+ uses
 export const TYPE_EOC = 0,
   TYPE_BOOLEAN = 1,
@@ -46,49 +54,6 @@ const BER_REAL_MINUS_INFINITY = 0x41;
 const BER_REAL_NAN = 0x42;
 const BER_REAL_MINUS_ZERO = 0x43;
 
-function split_float64(value) {
-  const u8 = new Uint8Array(8);
-  const data = new DataView(u8.buffer);
-  data.setFloat64(0, value);
-
-  const sign = u8[0] & 0x80;
-  const msb32 = data.getInt32(0);
-  const lsb32 = data.getUint32(4);
-
-  const exponent = ((msb32 & 0x7ff00000) >> 20) - 1023;
-  let mantissa = (msb32 & 0x000fffff) | 0x00100000;
-
-  mantissa *= UINT32_MAX + 1;
-  mantissa += lsb32;
-
-  while (!(mantissa & 0xff)) mantissa /= UINT32_MAX + 1;
-
-  while (!(mantissa & 0x1)) mantissa /= 2;
-
-  return [sign, exponent, mantissa];
-}
-
-function join_float64(sign, exponent, mantissa) {
-  const u32 = new Uint32Array(2);
-  const data = new DataView(u32.buffer);
-
-  while (mantissa < 0x10000000000) mantissa *= UINT32_MAX + 1;
-
-  while (mantissa < 0x100000000000) mantissa *= 2;
-
-  u32[1] = mantissa % (UINT32_MAX + 1);
-  u32[0] = mantissa / (UINT32_MAX + 1);
-
-  u32[0] &= 0x0fffff;
-
-  exponent += 1023;
-  u32[0] |= exponent << 23;
-
-  if (sign) u32[0] += UINT32_MAX + 1;
-
-  return data.getFloat64(0);
-}
-
 const utf8decoder = new TextDecoder();
 const utf8encoder = new TextEncoder();
 
@@ -103,7 +68,7 @@ function tlv_encode_length(data, pos, length) {
     pos++;
   } else if (length <= UINT16_MAX) {
     data.setUint8(pos, 128 | 2);
-    pos ++;
+    pos++;
     data.setUint16(pos, length);
     pos += 2;
   } else if (length <= UINT32_MAX) {
@@ -250,46 +215,14 @@ export class TLV {
         case TYPE_BOOLEAN:
           return 1;
         case TYPE_INTEGER: {
-          const value = this.value;
-
-          if (value >= INT32_MIN && value <= INT32_MAX) {
-            if (value >= INT16_MIN && value <= INT16_MAX) {
-              if (value >= INT8_MIN && value <= INT8_MAX) {
-                return 1;
-              } else {
-                return 2;
-              }
-            } else {
-              if (value >= INT24_MIN && value <= INT24_MAX) {
-                return 3;
-              } else {
-                return 4;
-              }
-            }
-          } else {
-            if (value >= INT48_MIN && value <= INT48_MAX) {
-              if (value >= INT40_MIN && value <= INT40_MAX) return 5;
-              else return 6;
-            } else {
-              throw new Error('FIXME');
-            }
-          }
+          return integer_encoded_length(this.value);
         }
         case TYPE_OCTETSTRING:
           throw new Error('FIXME');
         case TYPE_NULL:
           return 0;
-        case TYPE_REAL: {
-          const value = +this.value;
-
-          if (value === 0.0) {
-            return 0;
-          } else if (value === -0.0 || value !== value || !isFinite(value)) {
-            return 1;
-          } else {
-            return 9;
-          }
-        }
+        case TYPE_REAL:
+          return real_encoded_length(this.value);
         case TYPE_UTF8STRING:
           return utf8encoder.encode(this.value).length;
         case TYPE_RELATIVE_OID: {
@@ -345,84 +278,14 @@ export class TLV {
         case TYPE_INTEGER: {
           const value = this.value;
 
-          if (value >= INT32_MIN && value <= INT32_MAX) {
-            if (value >= INT16_MIN && value <= INT16_MAX) {
-              if (value >= INT8_MIN && value <= INT8_MAX) {
-                data.setInt8(pos, value);
-                pos++;
-                return pos;
-              } else {
-                data.setInt16(pos, value);
-                pos += 2;
-                return pos;
-              }
-            } else {
-              if (value >= INT24_MIN && value <= INT24_MAX) {
-                const tmp = data.getUint8(pos - 1);
-                data.setInt32(pos - 1, value);
-                data.setUint8(pos - 1, tmp);
-                pos += 3;
-                return pos;
-              } else {
-                data.setInt32(pos, value);
-                pos += 4;
-                return pos;
-              }
-            }
-          } else {
-            throw new Error('FIXME');
-            if (value >= INT48_MIN && value <= INT48_MAX) {
-              if (value >= INT40_MIN && value <= INT40_MAX) {
-              } else {
-              }
-            } else {
-              throw new Error('FIXME');
-            }
-          }
+          return integer_encode(data, pos, this.value);
         }
         case TYPE_OCTETSTRING:
           throw new Error('FIXME');
         case TYPE_NULL:
           return pos;
-        case TYPE_REAL: {
-          const value = +this.value;
-
-          if (value === 0.0) {
-            return pos;
-          } else if (value === -0.0) {
-            data.setUint8(pos, BER_REAL_MINUS_ZERO);
-            pos++;
-            return pos;
-          } else if (value !== value) {
-            data.setUint8(pos, BER_REAL_NAN);
-            pos++;
-            return pos;
-          } else if (!isFinite(value)) {
-            data.setUint8(
-              pos,
-              value > 0 ? BER_REAL_PLUS_INFINITY : BER_REAL_MINUS_INFINITY
-            );
-            pos++;
-            return pos;
-          } else {
-            const [sign, exponent, mantissa] = split_float64(value);
-
-            data.setUint8(pos, sign ? 0xc2 : 0x82);
-            pos += 1;
-            // exponent length is always 2
-            data.setUint16(pos, exponent);
-            pos += 2;
-            // mantissa length is always 6
-            data.setUint16(pos, mantissa / (UINT32_MAX + 1));
-            pos += 2;
-            data.setUint32(pos, mantissa);
-            pos += 4;
-
-            console.log('>', sign, exponent, mantissa);
-
-            return pos;
-          }
-        }
+        case TYPE_REAL:
+          return real_encode(data, pos, this.value);
         case TYPE_UTF8STRING:
           if (utf8encoder.encodeInto) {
             const dst = new Uint8Array(data.buffer, data.byteOffset + pos);
@@ -571,13 +434,8 @@ export class TLV {
         case TYPE_INTEGER: {
           if (!length) throw new Error('Bad length field for INTEGER.');
 
-          let value = data.getInt8(pos);
-          pos++;
-
-          for (let i = 1; i < length; i++) {
-            value = value * (1 + UINT8_MAX) + data.getUint8(pos);
-            pos++;
-          }
+          let value = integer_decode(data, pos, length);
+          pos += length;
 
           // FIXME: we could/should test if the encoding was shorted form
 
@@ -592,65 +450,10 @@ export class TLV {
           return [new TLV(identifier, null), pos];
         }
         case TYPE_REAL: {
-          let value;
+          if (length < 0) throw new Error('Bad length field for REAL.');
 
-          if (length === 0) {
-            value = 0.0;
-          } else if (length === 1) {
-            let tmp = data.getUint8(pos);
-            pos++;
-
-            switch (tmp) {
-              case BER_REAL_PLUS_INFINITY:
-                value = Infinity;
-                break;
-              case BER_REAL_MINUS_INFINITY:
-                value = -Infinity;
-                break;
-              case BER_REAL_NAN:
-                value = NaN;
-                break;
-              case BER_REAL_MINUS_ZERO:
-                value = -0.0;
-                break;
-              default:
-                throw new Error('Malformed REAL.');
-            }
-          } else {
-            const start = pos;
-            const tmp = data.getUint8(pos);
-            pos++;
-
-            if (!(tmp & (1 << 7)))
-              throw new Error('TYPE_REAL only supports binary encoding.');
-
-            const sign = tmp & (1 << 6);
-            const F = (tmp >> 2) & 3;
-            let exponent_length = tmp & 3;
-
-            if (exponent_length === 3) exponent_length = data.getUint8(pos);
-            pos++;
-
-            let exponent = 0;
-
-            for (let i = 0; i < exponent_length; i++) {
-              exponent *= UINT8_MAX + 1;
-              exponent += data.getUint8(pos);
-              pos++;
-            }
-
-            let mantissa = 0;
-
-            while (pos < start + length) {
-              mantissa *= UINT8_MAX + 1;
-              mantissa += data.getUint8(pos);
-              pos++;
-            }
-
-            console.log('<', sign, exponent, mantissa);
-
-            value = join_float64(sign, exponent, mantissa);
-          }
+          const value = real_decode(data, pos, length);
+          pos += length;
 
           return [new TLV(identifier, value), pos];
         }

@@ -112,7 +112,9 @@ class TreeNode {
     observers.push(callback);
 
     return () => {
-      this._propertyObservers = this._propertyObservers.filter(_cb => _cb !== callback);
+      this._propertyObservers = this._propertyObservers.filter(
+        (_cb) => _cb !== callback
+      );
     };
   }
 
