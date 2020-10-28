@@ -97,18 +97,20 @@ function tlv_encode_length(data, pos, length) {
     data.setUint8(pos, length);
     pos++;
   } else if (length <= UINT8_MAX) {
-    data.setUint8(128 | 2, pos);
+    data.setUint8(pos, 128 | 2);
     pos++;
-    data.setUint8(length, pos);
+    data.setUint8(pos, length);
     pos++;
   } else if (length <= UINT16_MAX) {
-    data.setUint8(128 | 2);
-    data.setUint16(length, pos);
+    data.setUint8(pos, 128 | 2);
+    pos ++;
+    data.setUint16(pos, length);
     pos += 2;
   } else if (length <= UINT32_MAX) {
-    data.setUint8(128 | 4);
-    data.setUint32(length, pos);
-    pos += 2;
+    data.setUint8(pos, 128 | 4);
+    pos++;
+    data.setUint32(pos, length);
+    pos += 4;
   } else throw new Error('Length overflow.');
 
   return pos;
