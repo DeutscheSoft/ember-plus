@@ -5,7 +5,6 @@ import {
   Enum,
   SequenceOf,
   Struct,
-  TLV,
   TYPE_BOOLEAN,
   TYPE_INTEGER,
   TYPE_REAL,
@@ -19,13 +18,14 @@ const EMBER_ROOT = 0,
   EMBER_COMMAND = 2,
   EMBER_NODE = 3,
   EMBER_ELEMENT_COLLECTION = 4,
-  EMBER_STREAM_COLLECTION = 5,
-  EMBER_STREAM_ENTRY = 6,
+  EMBER_STREAM_ENTRY = 5,
+  EMBER_STREAM_COLLECTION = 6,
   EMBER_STRING_INTEGER_PAIR = 7,
   EMBER_STRING_INTEGER_COLLECTION = 8,
   EMBER_QUALIFIED_PARAMETER = 9,
   EMBER_QUALIFIED_NODE = 10,
-  EMBER_ROOT_ELEMENT_COLLECTION = 11;
+  EMBER_ROOT_ELEMENT_COLLECTION = 11,
+  EMBER_STREAM_DESCRIPTION = 12;
 
 const emberValue = AnonymousChoice(
   TYPE_INTEGER,
@@ -82,19 +82,19 @@ const emberNodeContents = AnonymousStruct({
   isOnline: TYPE_BOOLEAN, // FIXME: default = true
 });
 
-export class emberCommand extends Struct(2, {
+export class emberCommand extends Struct(EMBER_COMMAND, {
   number: emberCommandType,
   options: TYPE_INTEGER,
 }) {}
 
-const emberStringIntegerPair = Struct(7, {
+const emberStringIntegerPair = Struct(EMBER_STRING_INTEGER_PAIR, {
   entryString: TYPE_UTF8STRING,
   entryInteger: TYPE_INTEGER,
 });
 
-const emberStringIntegerCollection = SequenceOf(8, emberStringIntegerPair);
+const emberStringIntegerCollection = SequenceOf(EMBER_STRING_INTEGER_COLLECTION, emberStringIntegerPair);
 
-const emberStreamDescription = Struct(12, {
+const emberStreamDescription = Struct(EMBER_STREAM_DESCRIPTION, {
   format: emberStreamFormat,
   offset: TYPE_INTEGER,
 });
@@ -119,27 +119,27 @@ export class emberParameterContents extends AnonymousStruct({
   streamDescriptor: emberStreamDescription,
 }) {}
 
-export class emberElementCollection extends SequenceOf(4, null) {}
+export class emberElementCollection extends SequenceOf(EMBER_ELEMENT_COLLECTION, null) {}
 
-export class emberParameter extends Struct(1, {
+export class emberParameter extends Struct(EMBER_PARAMETER, {
   number: TYPE_INTEGER,
   contents: emberParameterContents,
   children: emberElementCollection,
 }) {}
 
-export class emberQualifiedParameter extends Struct(9, {
+export class emberQualifiedParameter extends Struct(EMBER_QUALIFIED_PARAMETER, {
   path: TYPE_RELATIVE_OID,
   contents: emberParameterContents,
   children: emberElementCollection,
 }) {}
 
-export class emberQualifiedNode extends Struct(10, {
+export class emberQualifiedNode extends Struct(EMBER_QUALIFIED_NODE, {
   path: TYPE_RELATIVE_OID,
   contents: emberNodeContents,
   children: emberElementCollection,
 }) {}
 
-export class emberNode extends Struct(3, {
+export class emberNode extends Struct(EMBER_NODE, {
   number: TYPE_INTEGER,
   contents: emberNodeContents,
   children: emberElementCollection,
@@ -155,17 +155,17 @@ const emberRootElement = AnonymousChoice(
   emberQualifiedParameter,
   emberQualifiedNode
 ); // TODO: also matrix
-export const emberRootElementCollection = SequenceOf(11, emberRootElement);
+export const emberRootElementCollection = SequenceOf(EMBER_ROOT_ELEMENT_COLLECTION, emberRootElement);
 
-export const emberStreamEntry = Struct(5, {
+export const emberStreamEntry = Struct(EMBER_STREAM_ENTRY, {
   streamIdentifier: TYPE_INTEGER,
   streamValue: emberValue,
 });
 
-const emberStreamCollection = SequenceOf(6, emberStreamEntry);
+const emberStreamCollection = SequenceOf(EMBER_STREAM_COLLECTION, emberStreamEntry);
 
 export class emberRoot extends Choice(
-  0,
+  EMBER_ROOT,
   emberRootElementCollection,
   emberStreamCollection
 ) {}
