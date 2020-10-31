@@ -359,7 +359,7 @@ export class TLV {
 
       if (length === -1) {
         // indefinite length
-        while (true) {
+        for (;;) {
           let ctlv;
           [ctlv, pos] = TLV.decode_from(data, pos);
 
@@ -759,7 +759,7 @@ export function Enum(...names) {
   };
 }
 
-function AnonymousSequenceOf(type) {
+export function AnonymousSequenceOf(type) {
   return class {
     static decode(tlv) {
       if (!tlv.is_universal || tlv.type !== TYPE_SEQUENCE)

@@ -220,7 +220,7 @@ export class Connection {
   receive(buf) {
     this._frameDecoder.feed(buf);
 
-    while (true) {
+    for (;;) {
       const frame = this._frameDecoder.parse();
 
       if (frame === null) break;

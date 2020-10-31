@@ -63,7 +63,7 @@ export function real_encoded_length(value) {
     return 1;
   }
 
-  const [sign, exponent, mantissa] = split_float64(value);
+  const [, exponent, mantissa] = split_float64(value);
 
   return (
     1 + integer_encoded_length(exponent) + integer_encoded_length(mantissa)
