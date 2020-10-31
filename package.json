@@ -16,5 +16,7 @@
     "eslint": "./eslint/node_modules/.bin/eslint .",
     "esdoc": "cd esdoc && ./node_modules/.bin/esdoc -c .esdoc.json"
   },
-  "author": "Arne Goedeke <arne@deuso.de>"
+  "sideEffects": [ ],
+  "author": "Arne Goedeke <arne@deuso.de>",
+  "license": "GPL-2.0-only"
 }
