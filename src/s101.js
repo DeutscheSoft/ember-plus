@@ -1,5 +1,6 @@
-/*
- * S101 implementation
+/**
+ * S101 implementation.
+ * @module S101
  */
 
 const S101_BOF = 0xfe,
@@ -45,7 +46,8 @@ const CRC_TABLE = Uint16Array.from([
 ]);
 
 /**
- * Checks the CRC value of the input buffer.
+ * @internal
+ * Calculates the crc value of the input buffer.
  */
 function calculate_crc(src) {
   let crc = 0xffff;
@@ -57,22 +59,35 @@ function calculate_crc(src) {
   return crc;
 }
 
+/**
+ * A class for decoding S101 frames from a data stream.
+ */
 export class S101FrameDecoder {
+
+  /**
+   * Construct a new S101FrameDecoder.
+   */
   constructor() {
+    /** @private */
     this.pos = 0;
+    /** @private */
     this.a8 = null;
   }
 
-  feed(buf) {
+  /**
+   * Add new data to the decoder.
+   * @param {ArrayBuffer} data The data.
+   */
+  feed(data) {
     if (!this.a8) {
-      this.a8 = new Uint8Array(buf);
+      this.a8 = new Uint8Array(data);
     } else {
       const length = this.a8.length - this.pos;
-      const nbuf = new ArrayBuffer(buf.byteLength + length);
+      const nbuf = new ArrayBuffer(data.byteLength + length);
       const na8 = new Uint8Array(nbuf);
 
       na8.set(this.a8.subarray(this.pos));
-      na8.set(new Uint8Array(buf), length);
+      na8.set(new Uint8Array(data), length);
 
       this.a8 = na8;
       this.pos = 0;
@@ -81,7 +96,9 @@ export class S101FrameDecoder {
 
   /**
    * Returns a DataView of the next frame, or null if no full S101 frame is
-   * contained in the buffer.
+   * contained in the internal buffer.
+   *
+   * @returns {DataView} A view of the next frame.
    */
   parse() {
     let pos = this.pos;
@@ -149,6 +166,7 @@ export class S101FrameDecoder {
   }
 }
 
+/** @internal */
 export function S101DecodeFrame(buf) {
   const decoder = new S101FrameDecoder();
   decoder.feed(buf);
@@ -159,10 +177,13 @@ export function S101DecodeFrame(buf) {
 }
 
 /**
- * Returns an ArrayBuffer containing the encoded data.
+ * Encodes a chunk of data into an S101 frame.
+ *
+ * @param {ArrayBuffer} data The data to encode into a S101 frame.
+ * @returns {ArrayBuffer} The encoded S101 frame.
  */
-export function S101EncodeFrame(buf) {
-  const src = new Uint8Array(buf);
+export function S101EncodeFrame(data) {
+  const src = new Uint8Array(data);
   const crc = ~calculate_crc(src) & 0xffff;
 
   let length = 2 + src.length + 2;
