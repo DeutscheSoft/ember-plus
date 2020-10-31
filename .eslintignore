@@ -1,0 +1,5 @@
+/eslint/*
+/esdoc/*
+/prettier/*
+.eslintrc.cjs
+/dist/*
