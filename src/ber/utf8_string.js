@@ -23,4 +23,3 @@ export function utf8_string_decode(data, pos, length) {
   const a8 = new Uint8Array(data.buffer, data.byteOffset + pos, length);
   return utf8decoder.decode(a8);
 }
-

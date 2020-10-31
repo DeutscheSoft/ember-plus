@@ -79,8 +79,7 @@ export function real_encode(data, pos, value) {
   value = +value;
 
   if (value === 0.0) {
-    if (Object.is(value, 0))
-      return pos;
+    if (Object.is(value, 0)) return pos;
 
     data.setUint8(pos, BER_REAL_MINUS_ZERO);
     pos++;

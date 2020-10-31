@@ -1,4 +1,3 @@
-
 export function relative_oid_encoded_length(identifiers) {
   if (!Array.isArray(identifiers))
     throw new TypeError('Expected Array<number>.');
@@ -9,9 +8,7 @@ export function relative_oid_encoded_length(identifiers) {
     let n = identifiers[i];
 
     if (!(n >= 0))
-      throw new TypeError(
-        'Relative OID entries need to be non-negative.'
-      );
+      throw new TypeError('Relative OID entries need to be non-negative.');
 
     do {
       length++;
@@ -27,9 +24,7 @@ export function relative_oid_encode(data, pos, identifiers) {
     let n = identifiers[i];
 
     if (!(n >= 0))
-      throw new TypeError(
-        'Relative OID entries need to be non-negative.'
-      );
+      throw new TypeError('Relative OID entries need to be non-negative.');
 
     do {
       let b = n & 0x7f;

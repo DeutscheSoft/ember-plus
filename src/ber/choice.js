@@ -27,4 +27,3 @@ export function Choice(application_id, ...types) {
     }
   };
 }
-

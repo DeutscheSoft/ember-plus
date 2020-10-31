@@ -11,7 +11,7 @@ export function is_equal(b1, b2) {
     case 'number':
       if (b1 !== b1) return b2 !== b2;
       if (b1 === 0) return Object.is(b1, b2);
-      /* FallThrought */
+    /* FallThrought */
     case 'string':
       return b1 === b2;
     case 'object':

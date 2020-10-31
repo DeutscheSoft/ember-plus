@@ -14,4 +14,3 @@ export function AnonymousStruct(properties) {
     }
   };
 }
-

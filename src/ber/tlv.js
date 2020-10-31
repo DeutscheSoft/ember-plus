@@ -12,7 +12,7 @@ import {
   TYPE_UTF8STRING,
   TYPE_RELATIVE_OID,
   TYPE_SEQUENCE,
-  TYPE_SET
+  TYPE_SET,
 } from './constants.js';
 
 const UINT32_MAX = 0xffffffff;
@@ -29,19 +29,18 @@ import { real_encoded_length, real_encode, real_decode } from './real.js';
 import {
   utf8_string_encoded_length,
   utf8_string_encode,
-  utf8_string_decode
+  utf8_string_decode,
 } from './utf8_string.js';
 import {
   relative_oid_encoded_length,
   relative_oid_encode,
-  relative_oid_decode
+  relative_oid_decode,
 } from './relative_oid.js';
 import {
   octet_string_encoded_length,
   octet_string_encode,
-  octet_string_decode
+  octet_string_decode,
 } from './octet_string.js';
-
 
 function tlv_encode_length(data, pos, length) {
   if (length <= INT8_MAX) {
@@ -363,7 +362,8 @@ export class TLV {
           return [new TLV(identifier, value), pos];
         }
         case TYPE_OCTETSTRING: {
-          if (length === -1) throw new Error('Unsupported indefinite length octet string.');
+          if (length === -1)
+            throw new Error('Unsupported indefinite length octet string.');
 
           const u8 = octet_string_decode(data, pos, length);
           pos += length;
@@ -384,13 +384,15 @@ export class TLV {
           return [new TLV(identifier, value), pos];
         }
         case TYPE_UTF8STRING: {
-          if (!(length >= 0)) throw new Error('Bad length field for UTF8STRING');
+          if (!(length >= 0))
+            throw new Error('Bad length field for UTF8STRING');
           const str = utf8_string_decode(data, pos, length);
           pos += length;
           return [new TLV(identifier, str), pos];
         }
         case TYPE_RELATIVE_OID: {
-          if (!(length > 0)) throw new Error('Bad length field for RELATIVE_OID');
+          if (!(length > 0))
+            throw new Error('Bad length field for RELATIVE_OID');
           const identifiers = relative_oid_decode(data, pos, length);
           pos += length;
           return [new TLV(identifier, identifiers), pos];

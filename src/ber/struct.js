@@ -29,4 +29,3 @@ export function Struct(application_id, properties) {
     }
   };
 }
-

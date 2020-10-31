@@ -1,4 +1,3 @@
-
 // there are more types but this is what ember+ uses
 export const TYPE_EOC = 0;
 export const TYPE_BOOLEAN = 1;

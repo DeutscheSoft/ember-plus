@@ -63,7 +63,6 @@ function calculate_crc(src) {
  * A class for decoding S101 frames from a data stream.
  */
 export class S101FrameDecoder {
-
   /**
    * Construct a new S101FrameDecoder.
    */

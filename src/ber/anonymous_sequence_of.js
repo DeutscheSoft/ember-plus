@@ -19,4 +19,3 @@ export function AnonymousSequenceOf(type) {
     }
   };
 }
-
