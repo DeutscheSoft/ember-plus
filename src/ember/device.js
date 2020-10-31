@@ -8,6 +8,18 @@ import {
 } from './types.js';
 import { InternalNode, Node, Parameter, RootNode } from './tree.js';
 
+/**
+ * Represents a remote Ember+ device.
+ *
+ * The basic concept of this class is that it allows observing the content of
+ * Ember+ nodes and parameters and to send value changes to Ember+ properties.
+ * To subscribe to the child nodes of a node use the method
+ * {@link observeDirectory}. To subscribe to properties of a node or parameter
+ * use the method {@link observeProperty}.
+ *
+ * By combining these two methods it is possible to recursively discover and
+ * control an Ember+ device.
+ */
 export class Device {
   _registerNode(treeNode) {
     this._nodes.set(treeNode.key, treeNode);
@@ -281,10 +293,19 @@ export class Device {
     }
   }
 
+  /**
+   * Returns the root node.
+   */
   get root() {
     return this._root;
   }
 
+  /**
+   * Constructs a device with the given connection.
+   *
+   * @param {Connection} connection
+   *    An ember-plus connection.
+   */
   constructor(connection) {
     this.connection = connection;
 
@@ -350,7 +371,8 @@ export class Device {
   /**
    * Call EmberConnection.setKeepaliveInterval().
    *
-   * @param {number} time - Keepalive interval in milliseconds.
+   * @param {number} time
+   *    Keepalive interval in milliseconds.
    */
   setKeepaliveInterval(time) {
     this.connection.setKeepaliveInterval(time);
@@ -381,7 +403,15 @@ export class Device {
    * and once initially if children have already been received.
    *
    * When the given node is removed (e.g. because a parent node
-   * has gone offline), the callback is called with null.
+   * has gone offline), the callback is called with null once.
+   *
+   * @param {Node|RootNode} node
+   *    The node to observe directory changes in.
+   * @param {function(node: Node): void} callback
+   *    A callback function called whenever the node children change.
+   * @returns {function():void}
+   *    Returns a unsubscription function. By calling it the
+   *    property change subscription will be removed.
    */
   observeDirectory(arg, callback) {
     if (typeof callback !== 'function')
@@ -427,6 +457,16 @@ export class Device {
 
   /**
    * Observes the given property inside of the given node.
+   *
+   * @param {Node|Parameter} node
+   *    The ember-plus node.
+   * @param {string} propertyName
+   *    The propertyName.
+   * @param {function(propertyValue: *): void} callback
+   *    The callback function to invoke.
+   * @returns {function():void}
+   *    Returns a unsubscription function. By calling it the
+   *    property change subscription will be removed.
    */
   observeProperty(node, propertyName, callback) {
     node = this._findNode(node);
@@ -491,8 +531,10 @@ export class Device {
    * Parameter is reversed. For instance, this can be used to set an enum using
    * the enumeration name instead of the value.
    *
-   * @param {Parameter} parameter The parameter node.
-   * @param {*} value The new value.
+   * @param {Parameter} parameter
+   *    The parameter node.
+   * @param {*}
+   *    value The new value.
    * @return void
    */
   setEffectiveValue(parameter, value) {
@@ -502,6 +544,9 @@ export class Device {
     this.setValue(parameter, parameter.fromEffectiveValue(value));
   }
 
+  /**
+   * Close this connection.
+   */
   close() {
     this.connection.close();
   }
