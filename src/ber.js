@@ -18,6 +18,11 @@ import {
   relative_oid_encode,
   relative_oid_decode
 } from './ber/relative_oid.js';
+import {
+  octet_string_encoded_length,
+  octet_string_encode,
+  octet_string_decode
+} from './ber/octet_string.js';
 
 // there are more types but this is what ember+ uses
 export const TYPE_EOC = 0,
@@ -198,11 +203,10 @@ export class TLV {
       switch (this.type) {
         case TYPE_BOOLEAN:
           return 1;
-        case TYPE_INTEGER: {
+        case TYPE_INTEGER:
           return integer_encoded_length(this.value);
-        }
         case TYPE_OCTETSTRING:
-          throw new Error('FIXME');
+          return octet_string_encoded_length(this.value);
         case TYPE_NULL:
           return 0;
         case TYPE_REAL:
@@ -239,7 +243,7 @@ export class TLV {
         case TYPE_INTEGER:
           return integer_encode(data, pos, this.value);
         case TYPE_OCTETSTRING:
-          throw new Error('FIXME');
+          return octet_string_encode(data, pos, this.value);
         case TYPE_NULL:
           return pos;
         case TYPE_REAL:
@@ -358,7 +362,7 @@ export class TLV {
           return [new TLV(identifier, value), pos];
         }
         case TYPE_INTEGER: {
-          if (!length) throw new Error('Bad length field for INTEGER.');
+          if (!(length > 0)) throw new Error('Bad length field for INTEGER.');
 
           const value = integer_decode(data, pos, length);
           pos += length;
@@ -368,7 +372,12 @@ export class TLV {
           return [new TLV(identifier, value), pos];
         }
         case TYPE_OCTETSTRING: {
-          throw new Error('FIXME');
+          if (length === -1) throw new Error('Unsupported indefinite length octet string.');
+
+          const u8 = octet_string_decode(data, pos, length);
+          pos += length;
+
+          return [new TLV(identifier, u8), pos];
         }
         case TYPE_NULL: {
           if (length) throw new Error('Bad length field for NULL.');

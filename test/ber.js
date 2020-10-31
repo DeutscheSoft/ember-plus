@@ -50,6 +50,8 @@ export function testBer() {
     TLV.SET([TLV.INTEGER(1), undefined, TLV.INTEGER(2), undefined])
   );
 
+  test_tlv_encode_decode(TLV.OCTETSTRING(new Uint8Array(13)));
+
   // special floating point values
   test_tlv_encode_decode(TLV.REAL(Math.PI));
   test_tlv_encode_decode(TLV.REAL(NaN));
