@@ -1,0 +1,17 @@
+{
+  "name": "ember-plus-esdoc",
+  "version": "1.0.0",
+  "description": "Esdoc documentation configuration for ember-plus.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Arne Goedeke <arne@deuso.de>",
+  "private": true,
+  "dependencies": {
+    "esdoc": "^1.1.0",
+    "esdoc-brand-plugin": "^1.0.1",
+    "esdoc-inject-style-plugin": "^1.0.0",
+    "esdoc-publish-html-plugin": "^1.1.2",
+    "esdoc-standard-plugin": "^1.0.0"
+  }
+}
