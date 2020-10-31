@@ -1,4 +1,4 @@
-import { TLV } from '../src/ber.js';
+import { TLV } from '../src/ber/tlv.js';
 import { someFloats } from './float64.js';
 import { assert_equal } from './helpers.js';
 
