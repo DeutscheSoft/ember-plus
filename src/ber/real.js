@@ -118,7 +118,7 @@ export function real_decode(data, pos, length) {
   if (length === 0) {
     value = 0.0;
   } else if (length === 1) {
-    let tmp = data.getUint8(pos);
+    const tmp = data.getUint8(pos);
     pos++;
 
     switch (tmp) {

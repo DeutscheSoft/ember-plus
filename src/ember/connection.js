@@ -203,7 +203,7 @@ export class EmberConnection {
         const root = emberRoot.decode(tlv);
 
         if (this.onRootElements === null) {
-          console.warn('Dropped root element %o', element);
+          console.warn('Dropped root element %o', root);
         }
 
         try {
@@ -221,7 +221,7 @@ export class EmberConnection {
     this._frameDecoder.feed(buf);
 
     while (true) {
-      let frame = this._frameDecoder.parse();
+      const frame = this._frameDecoder.parse();
 
       if (frame === null) break;
 

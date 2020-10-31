@@ -8,14 +8,6 @@ import {
 } from './types.js';
 import { InternalNode, Node, Parameter, RootNode } from './tree.js';
 
-function getKey(element) {
-  if (element instanceof emberNode || element instanceof emberParameter) {
-    return '' + element.number;
-  } else {
-    return element.path.join('.');
-  }
-}
-
 export class Device {
   _registerNode(treeNode) {
     this._nodes.set(treeNode.key, treeNode);
@@ -23,8 +15,6 @@ export class Device {
     if (treeNode instanceof Parameter && treeNode.streamIdentifier !== void 0) {
       this._streamParameters.set(treeNode.streamIdentifier, treeNode);
     }
-
-    const identifierPath = treeNode.identifierPath;
 
     const parent = treeNode.parent;
 
@@ -40,8 +30,6 @@ export class Device {
     if (treeNode instanceof Parameter && treeNode.streamIdentifier !== void 0) {
       this._streamParameters.delete(treeNode.streamIdentifier);
     }
-
-    const identifierPath = treeNode.identifierPath;
 
     const parent = treeNode.parent;
 
@@ -76,11 +64,9 @@ export class Device {
   }
 
   _getParent(path) {
-    let parent;
-
     const nodes = this._nodes;
 
-    parent = nodes.get(path.join('.'));
+    const parent = nodes.get(path.join('.'));
 
     if (!parent) throw new Error('Could not find parent.');
 
