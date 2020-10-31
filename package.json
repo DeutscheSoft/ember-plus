@@ -10,7 +10,8 @@
   "scripts": { 
     "prettier": "cd prettier && npm run prettier",
     "build": "./node_modules/.bin/rollup -c rollup.config.js",
-    "eslint": "./eslint/node_modules/.bin/eslint ."
+    "eslint": "./eslint/node_modules/.bin/eslint .",
+    "esdoc": "cd esdoc && ./node_modules/.bin/esdoc -c .esdoc.json"
   },
   "author": "Arne Goedeke <arne@deuso.de>"
 }
