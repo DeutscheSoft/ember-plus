@@ -59,7 +59,7 @@ export class TCPConnection extends EmberConnection {
    */
   static connect(options) {
     return new Promise((resolve, reject) => {
-      let socket;
+      let socket = null;
       socket = new createConnection(options, () => {
         socket.off('error', reject);
         resolve(new this(socket));

@@ -275,7 +275,7 @@ export class Node extends InternalNode {
 
   /** @internal */
   updateFrom(contents) {
-    for (let name in contents) {
+    for (const name in contents) {
       const value = contents[name];
 
       if (value !== void 0 && value !== this[name]) {
@@ -528,7 +528,7 @@ export class Parameter extends TreeNode {
     const enumeration = this._enumeration;
 
     if (enumeration !== void 0) {
-      let pos = enumeration.split('\n').indexOf(value);
+      const pos = enumeration.split('\n').indexOf(value);
 
       if (pos === -1) throw new Error('Unknown enum entry.');
 
@@ -561,7 +561,7 @@ export class Parameter extends TreeNode {
 
   /** @internal */
   updateFrom(contents) {
-    for (let name in contents) {
+    for (const name in contents) {
       const value = contents[name];
 
       if (value !== void 0 && value !== this[name]) {

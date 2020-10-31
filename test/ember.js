@@ -8,8 +8,6 @@ import {
   emberParameterContents,
 } from '../src/ember/types.js';
 
-import { inspect } from 'util';
-
 import { assert_equal } from './helpers.js';
 
 export function testEmber() {
@@ -25,33 +23,12 @@ export function testEmber() {
   {
     const reference = new Uint8Array(
       S101DecodeFrame(
+        // prettier-ignore
         Uint8Array.from([
-          0xfe,
-          0x00,
-          0x0e,
-          0x00,
-          0x01,
-          0xc0,
-          0x01,
-          0x02,
-          0x1f,
-          0x02,
-          0x60,
-          0x0b,
-          0x6b,
-          0x09,
-          0xa0,
-          0x07,
-          0x62,
-          0x05,
-          0xa0,
-          0x03,
-          0x02,
-          0x01,
-          0x20,
-          0xb4,
-          0xec,
-          0xff,
+          0xfe, 0x00, 0x0e, 0x00, 0x01, 0xc0, 0x01, 0x02,
+          0x1f, 0x02, 0x60, 0x0b, 0x6b, 0x09, 0xa0, 0x07,
+          0x62, 0x05, 0xa0, 0x03, 0x02, 0x01, 0x20, 0xb4,
+          0xec, 0xff,
         ]).buffer
       )
     );
@@ -72,7 +49,6 @@ export function testEmber() {
         value: 'foo',
       }),
     });
-    const tlv = result.contents.encode();
     test_ber_encode_decode(result);
   }
 }

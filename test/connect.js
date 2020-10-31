@@ -1,5 +1,6 @@
 import { TCPConnection } from '../src/index.js';
 import { Device } from '../src/index.js';
+import { argv, exit } from 'process';
 
 async function testConnect(options) {
   const connection = await TCPConnection.connect(options);
@@ -11,8 +12,8 @@ async function testConnect(options) {
 }
 
 const options = {
-  host: process.argv[2],
-  port: parseInt(process.argv[3]),
+  host: argv[2],
+  port: parseInt(argv[3]),
 };
 
 console.log('Connecting to', options);
@@ -20,10 +21,10 @@ console.log('Connecting to', options);
 testConnect(options).then(
   () => {
     console.log('Connected.');
-    //process.exit(0);
+    //exit(0);
   },
   (error) => {
     console.error(error);
-    process.exit(1);
+    exit(1);
   }
 );

@@ -1,6 +1,6 @@
 import { TLV } from '../src/ber.js';
 import { someFloats } from './float64.js';
-import { to_u8, assert_equal } from './helpers.js';
+import { assert_equal } from './helpers.js';
 
 function test_tlv_encode_decode(a) {
   const buf = a.encode();

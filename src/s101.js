@@ -113,7 +113,7 @@ export class S101FrameDecoder {
 
     pos++;
 
-    let end = a8.indexOf(S101_EOF, pos);
+    const end = a8.indexOf(S101_EOF, pos);
 
     if (end === -1) {
       return null;

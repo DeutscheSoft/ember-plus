@@ -1,4 +1,5 @@
 import { TCPConnection, Device, Parameter } from '../src/index.js';
+import { argv, exit } from 'process';
 
 async function connect(options) {
   const connection = await TCPConnection.connect(options);
@@ -26,14 +27,14 @@ async function connect(options) {
 }
 
 const options = {
-  host: process.argv[2],
-  port: parseInt(process.argv[3]),
+  host: argv[2],
+  port: parseInt(argv[3]),
 };
 
 if (!(options.port > 0 && options.port <= 0xffff) ||
     !(typeof options.host === 'string' && options.host.length > 0)) {
-  console.error('Usage: %s %s <IP> <PORT>', process.argv[0], process.argv[1]);
-  process.exit(1);
+  console.error('Usage: %s %s <IP> <PORT>', argv[0], argv[1]);
+  exit(1);
 }
 
 console.log('Connecting to', options);
@@ -41,10 +42,10 @@ console.log('Connecting to', options);
 connect(options).then(
   () => {
     console.log('Connected.');
-    //process.exit(0);
+    //exit(0);
   },
   (error) => {
     console.error(error);
-    process.exit(1);
+    exit(1);
   }
 );
