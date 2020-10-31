@@ -2,7 +2,6 @@
  * Some subset of BER encoding needed for Ember+
  */
 
-import { split_float64, join_float64 } from './ber/real.js';
 import {
   integer_encoded_length,
   integer_encode,
@@ -33,26 +32,10 @@ const CLASS_UNIVERSAL = 0,
   CLASS_CONTEXT = 2,
   CLASS_PRIVATE = 3;
 
-const INT48_MIN = -0x800000000000;
-const INT48_MAX = 0x7fffffffffff;
-const INT40_MIN = -0x8000000000;
-const INT40_MAX = 0x7fffffffff;
-const INT32_MIN = -0x80000000;
-const INT32_MAX = 0x7fffffff;
 const UINT32_MAX = 0xffffffff;
-const INT24_MIN = -0x800000;
-const INT24_MAX = 0x7fffff;
-const INT16_MIN = -0x8000;
-const INT16_MAX = 0x7fff;
 const UINT16_MAX = 0xffff;
-const INT8_MIN = -0x80;
-const INT8_MAX = 0x7f;
 const UINT8_MAX = 0xff;
-
-const BER_REAL_PLUS_INFINITY = 0x40;
-const BER_REAL_MINUS_INFINITY = 0x41;
-const BER_REAL_NAN = 0x42;
-const BER_REAL_MINUS_ZERO = 0x43;
+const INT8_MAX = 0x7f;
 
 const utf8decoder = new TextDecoder();
 const utf8encoder = new TextEncoder();
@@ -170,12 +153,6 @@ export class TLV {
     return value[0];
   }
 
-  get application() {
-    if (!this.is_application) throw new Error('Not an application tag.');
-
-    return this.type;
-  }
-
   encoded_length() {
     let length = this.length();
 
@@ -254,8 +231,6 @@ export class TLV {
   }
 
   encode_to(data, pos) {
-    let lengths = this.length();
-
     const value = this.value;
 
     data.setUint8(pos, this.identifier);
@@ -275,11 +250,8 @@ export class TLV {
         case TYPE_BOOLEAN:
           data.setUint8(pos, value ? 0xff : 0);
           return pos + 1;
-        case TYPE_INTEGER: {
-          const value = this.value;
-
+        case TYPE_INTEGER:
           return integer_encode(data, pos, this.value);
-        }
         case TYPE_OCTETSTRING:
           throw new Error('FIXME');
         case TYPE_NULL:
@@ -342,15 +314,12 @@ export class TLV {
   }
 
   static decode_from(data, pos) {
-    let tmp;
-
     // read the tag
     const identifier = data.getUint8(pos);
     pos++;
 
-    const tag_class = identifier >> 6,
-      constructed = !!(identifier & 32),
-      tag_byte = identifier;
+    const tag_class = identifier >> 6;
+    const constructed = !!(identifier & 32);
 
     let tag_number = identifier & 31;
 
@@ -434,7 +403,7 @@ export class TLV {
         case TYPE_INTEGER: {
           if (!length) throw new Error('Bad length field for INTEGER.');
 
-          let value = integer_decode(data, pos, length);
+          const value = integer_decode(data, pos, length);
           pos += length;
 
           // FIXME: we could/should test if the encoding was shorted form
