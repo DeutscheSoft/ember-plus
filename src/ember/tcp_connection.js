@@ -1,11 +1,11 @@
-import { EmberConnection } from './connection.js';
+import { Connection } from './connection.js';
 import { createConnection } from 'net';
 import { performance } from 'perf_hooks';
 
 /**
  * A Ember+ TCP Connection.
  */
-export class TCPConnection extends EmberConnection {
+export class TCPConnection extends Connection {
   /**
    * @param {net.Socket} socket
    *    The connected socket.

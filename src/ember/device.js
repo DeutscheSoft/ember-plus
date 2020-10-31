@@ -369,7 +369,7 @@ export class Device {
   }
 
   /**
-   * Call EmberConnection.setKeepaliveInterval().
+   * Call Connection.setKeepaliveInterval().
    *
    * @param {number} time
    *    Keepalive interval in milliseconds.

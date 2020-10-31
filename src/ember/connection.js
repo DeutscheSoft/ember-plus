@@ -58,7 +58,7 @@ function encodeEmberFrame(tlv) {
   return S101EncodeFrame(u8.buffer);
 }
 
-export class EmberConnection {
+export class Connection {
   set onRootElements(callback) {
     if (typeof callback !== 'function') {
       throw new TypeError('Expected function.');

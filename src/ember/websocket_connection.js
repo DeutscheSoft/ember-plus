@@ -1,9 +1,9 @@
-import { EmberConnection } from './connection.js';
+import { Connection } from './connection.js';
 
 /**
  * Ember+ WebSocket connection.
  */
-export class WebSocketConnection extends EmberConnection {
+export class WebSocketConnection extends Connection {
   /**
    * Creates a ember+ websocket connection.
    *
