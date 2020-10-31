@@ -58,8 +58,8 @@ export function real_encoded_length(value) {
   value = +value;
 
   if (value === 0.0) {
-    return 0;
-  } else if (value === -0.0 || value !== value || !isFinite(value)) {
+    return Object.is(value, 0) ? 0 : 1;
+  } else if (value !== value || !isFinite(value)) {
     return 1;
   }
 
@@ -79,8 +79,9 @@ export function real_encode(data, pos, value) {
   value = +value;
 
   if (value === 0.0) {
-    return pos;
-  } else if (value === -0.0) {
+    if (Object.is(value, 0))
+      return pos;
+
     data.setUint8(pos, BER_REAL_MINUS_ZERO);
     pos++;
     return pos;

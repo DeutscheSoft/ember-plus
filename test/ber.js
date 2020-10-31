@@ -54,6 +54,7 @@ export function testBer() {
   test_tlv_encode_decode(TLV.REAL(Math.PI));
   test_tlv_encode_decode(TLV.REAL(NaN));
   test_tlv_encode_decode(TLV.REAL(0.0));
+  test_tlv_encode_decode(TLV.REAL(-0.0));
   test_tlv_encode_decode(TLV.REAL(Infinity));
   test_tlv_encode_decode(TLV.REAL(-Infinity));
 
