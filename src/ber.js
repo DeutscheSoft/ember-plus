@@ -8,6 +8,16 @@ import {
   integer_decode,
 } from './ber/integer.js';
 import { real_encoded_length, real_encode, real_decode } from './ber/real.js';
+import {
+  utf8_string_encoded_length,
+  utf8_string_encode,
+  utf8_string_decode
+} from './ber/utf8_string.js';
+import {
+  relative_oid_encoded_length,
+  relative_oid_encode,
+  relative_oid_decode
+} from './ber/relative_oid.js';
 
 // there are more types but this is what ember+ uses
 export const TYPE_EOC = 0,
@@ -36,9 +46,6 @@ const UINT32_MAX = 0xffffffff;
 const UINT16_MAX = 0xffff;
 const UINT8_MAX = 0xff;
 const INT8_MAX = 0x7f;
-
-const utf8decoder = new TextDecoder();
-const utf8encoder = new TextEncoder();
 
 function tlv_encode_length(data, pos, length) {
   if (length <= INT8_MAX) {
@@ -201,30 +208,9 @@ export class TLV {
         case TYPE_REAL:
           return real_encoded_length(this.value);
         case TYPE_UTF8STRING:
-          return utf8encoder.encode(this.value).length;
-        case TYPE_RELATIVE_OID: {
-          let length = 0;
-          const identifiers = this.value;
-
-          if (!Array.isArray(identifiers))
-            throw new TypeError('Expected Array<number>.');
-
-          for (let i = 0; i < identifiers.length; i++) {
-            let n = identifiers[i];
-
-            if (!(n >= 0))
-              throw new TypeError(
-                'Relative OID entries need to be non-negative.'
-              );
-
-            do {
-              length++;
-              n >>= 7;
-            } while (n !== 0);
-          }
-
-          return length;
-        }
+          return utf8_string_encoded_length(this.value);
+        case TYPE_RELATIVE_OID:
+          return relative_oid_encoded_length(this.value);
         default:
           throw new Error('Unsupported type: ' + this.type);
       }
@@ -259,41 +245,9 @@ export class TLV {
         case TYPE_REAL:
           return real_encode(data, pos, this.value);
         case TYPE_UTF8STRING:
-          if (utf8encoder.encodeInto) {
-            const dst = new Uint8Array(data.buffer, data.byteOffset + pos);
-            pos += utf8encoder.encodeInto(value, dst).written;
-          } else {
-            const dst = utf8encoder.encode(value);
-            const a8 = new Uint8Array(data.buffer, data.byteOffset + pos);
-            a8.set(dst);
-            pos += dst.length;
-          }
-          return pos;
-        case TYPE_RELATIVE_OID: {
-          const identifiers = this.value;
-
-          for (let i = 0; i < identifiers.length; i++) {
-            let n = identifiers[i];
-
-            if (!(n >= 0))
-              throw new TypeError(
-                'Relative OID entries need to be non-negative.'
-              );
-
-            do {
-              let b = n & 0x7f;
-
-              // not last byte
-              if (b !== n) b |= 0x80;
-
-              data.setUint8(pos, b);
-              pos++;
-
-              n >>= 7;
-            } while (n !== 0);
-          }
-          return pos;
-        }
+          return utf8_string_encode(data, pos, this.value);
+        case TYPE_RELATIVE_OID:
+          return relative_oid_encode(data, pos, this.value);
         default:
           throw new Error('Unsupported primitive type.');
       }
@@ -308,7 +262,10 @@ export class TLV {
 
     const pos = this.encode_to(new DataView(buf), 0);
 
-    if (pos !== length) throw new Error('Encoding offset mismatch.');
+    if (pos !== length) {
+      console.error('%O %d %d', this, pos, length);
+      throw new Error('Encoding offset mismatch.');
+    }
 
     return buf;
   }
@@ -427,26 +384,14 @@ export class TLV {
           return [new TLV(identifier, value), pos];
         }
         case TYPE_UTF8STRING: {
-          const a8 = new Uint8Array(data.buffer, data.byteOffset + pos, length);
+          if (!(length >= 0)) throw new Error('Bad length field for UTF8STRING');
+          const str = utf8_string_decode(data, pos, length);
           pos += length;
-          return [new TLV(identifier, utf8decoder.decode(a8)), pos];
+          return [new TLV(identifier, str), pos];
         }
         case TYPE_RELATIVE_OID: {
-          const a8 = new Uint8Array(data.buffer, data.byteOffset + pos, length);
-          const identifiers = [];
-          for (let acc = 0, i = 0; i < length; i++) {
-            const b = a8[i];
-
-            acc <<= 7;
-            acc |= b & 0x7f;
-
-            if ((b & 0x80) === 0) {
-              identifiers.push(acc);
-              acc = 0;
-            } else {
-              if (i === length - 1) throw Error('Unterminated relative OID');
-            }
-          }
+          if (!(length > 0)) throw new Error('Bad length field for RELATIVE_OID');
+          const identifiers = relative_oid_decode(data, pos, length);
           pos += length;
           return [new TLV(identifier, identifiers), pos];
         }
