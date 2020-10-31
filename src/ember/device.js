@@ -252,6 +252,7 @@ export class Device {
     try {
       elements.forEach((element) => {
         if (element instanceof emberCommand) {
+          throw new TypeError('Devices are not supposed to send commands.');
         } else if (
           element instanceof emberParameter ||
           element instanceof emberQualifiedParameter ||
@@ -363,12 +364,12 @@ export class Device {
 
       if (node !== this._nodes.get(node.key))
         throw new TypeError('Node does not belong to this device.');
-    } else if (typeof args === 'string') {
-      node = getNodeByPath(arg);
+    } else if (typeof arg === 'string') {
+      node = this._nodes.get(arg);
 
       if (!node) throw new Error('Unknown node.');
     } else {
-      throw new TypeError('Expected Node or string.');
+      throw new TypeError('Expected Node.');
     }
 
     return node;
