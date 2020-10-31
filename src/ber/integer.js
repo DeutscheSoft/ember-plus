@@ -6,7 +6,6 @@ const INT40_MIN = -0x8000000000;
 const INT40_MAX = 0x7fffffffff;
 const INT32_MIN = -0x80000000;
 const INT32_MAX = 0x7fffffff;
-const UINT32_MAX = 0xffffffff;
 const INT24_MIN = -0x800000;
 const INT24_MAX = 0x7fffff;
 const UINT24_MAX = 0xffffff;
