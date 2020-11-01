@@ -35,12 +35,17 @@ export function testBer() {
   test_tlv_encode_decode(TLV.INTEGER(-0xffffffff));
   test_tlv_encode_decode(TLV.INTEGER(0xffffffff));
 
+  if (typeof BigInt !== 'undefined') {
+    test_tlv_encode_decode(TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * 2n));
+  }
+
   for (let i = 0; i < 53; i++) {
     test_tlv_encode_decode(TLV.INTEGER(Math.pow(2, i)));
     test_tlv_encode_decode(TLV.INTEGER(-Math.pow(2, i)));
   }
 
-  test_tlv_encode_decode(TLV.INTEGER(4503599627370496));
+  test_tlv_encode_decode(TLV.INTEGER(Number.MAX_SAFE_INTEGER));
+  test_tlv_encode_decode(TLV.INTEGER(Number.MIN_SAFE_INTEGER));
 
   test_tlv_encode_decode(TLV.UTF8STRING('hello'));
   test_tlv_encode_decode(TLV.NULL());

@@ -412,8 +412,8 @@ export class TLV {
     return new this(type | (CLASS_UNIVERSAL << 6) | 32, value);
   }
   static INTEGER(v) {
-    if (typeof v !== 'number' || !isFinite(v))
-      throw new TypeError('Expected integer.');
+    if (!(typeof v === 'number' && isFinite(v)) && typeof v !== 'bigint')
+      throw new TypeError('Expected integer or BigInt.');
 
     return this.UNIVERSAL(TYPE_INTEGER, v);
   }

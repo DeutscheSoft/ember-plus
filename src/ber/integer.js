@@ -16,7 +16,32 @@ const INT8_MIN = -0x80;
 const INT8_MAX = 0x7f;
 const UINT8_MAX = 0xff;
 
+import {
+  HAS_BIGINT,
+  INT64_MIN,
+  INT64_MAX,
+  INT56_MIN,
+  INT56_MAX,
+} from './bigint.js';
+
 export function integer_encoded_length(value) {
+  if (typeof value === 'bigint') {
+    if (value >= INT53_MAX && value <= INT53_MAX) {
+      // This BigInt fits into a regular number.
+      value = Number(value);
+    } else {
+      if (value >= INT64_MIN && value <= INT64_MAX) {
+        if (value >= INT56_MIN && value <= INT56_MAX) {
+          return 7;
+        } else {
+          return 8;
+        }
+      } else {
+        throw new TypeError('No support for integers larger than 64 bit.');
+      }
+    }
+  }
+
   value = +value;
 
   if (!isFinite(value) || value !== value) throw new Error('Expected integer.');
@@ -53,6 +78,23 @@ const u8 = new Uint8Array(8);
 const u8_view = new DataView(u8.buffer);
 
 export function integer_encode_with_length(data, pos, n, length) {
+  if (typeof n === 'bigint') {
+    if (length < 7) {
+      value = Number(value);
+    } else {
+      if (length === 8) {
+        data.setBigInt64(pos, n);
+      } else {
+        // length === 7
+        u8_view.setBigInt64(0, n);
+        for (let i = 0; i < 7; i++) {
+          data.setUint8(pos + i, u8[1 + i]);
+        }
+      }
+      return pos + length;
+    }
+  }
+
   n = +n;
 
   switch (length) {
@@ -111,8 +153,7 @@ export function integer_encode_with_length(data, pos, n, length) {
       }
       break;
     default:
-      // We can support this going forward using bigint.
-      throw new Error('Not supported.');
+    // Unreachable
   }
 
   return pos + length;
@@ -141,6 +182,25 @@ export function integer_decode(data, pos, length) {
     }
     case 4:
       return data.getInt32(pos);
+    case 7:
+    // FallThrough
+    case 8: {
+      if (HAS_BIGINT) {
+        let value;
+
+        if (length === 8) {
+          value = data.getBigInt64(pos);
+        } else {
+          for (let i = 0; i < 7; i++) {
+            u8[1 + i] = data.getUint8(pos + i);
+          }
+          u8[0] = u8[1] & 0x80 ? 255 : 0;
+          value = u8_view.getBigInt64(0);
+        }
+
+        return value >= INT53_MIN && value <= INT53_MAX ? Number(value) : value;
+      }
+    }
     default: {
       let result = data.getInt32(pos);
 
