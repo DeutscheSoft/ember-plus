@@ -49,6 +49,8 @@ export function AnonymousChoice(...types) {
 
             if (universal_types[TYPE_REAL]) return TLV.REAL(value);
             break;
+          case 'bigint':
+            return TLV.INTEGER(value);
           case 'boolean':
             if (universal_types[TYPE_BOOLEAN]) return TLV.BOOLEAN(value);
             break;
