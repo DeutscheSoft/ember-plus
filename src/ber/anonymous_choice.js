@@ -40,11 +40,7 @@ export function AnonymousChoice(...types) {
             if (!universal_types[TYPE_UTF8STRING]) break;
             return TLV.UTF8STRING(value);
           case 'number':
-            if (
-              universal_types[TYPE_INTEGER] &&
-              isFinite(value) &&
-              Math.round(value) === value
-            )
+            if (universal_types[TYPE_INTEGER] && Number.isInteger(value))
               return TLV.INTEGER(value);
 
             if (universal_types[TYPE_REAL]) return TLV.REAL(value);

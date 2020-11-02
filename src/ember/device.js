@@ -522,6 +522,9 @@ export class Device {
     if (parameter !== this._nodes.get(parameter.key))
       throw new TypeError('Parameter does not belong to this device.');
 
+    if (typeof value === 'number' && parameter.guessType() === 'integer')
+      value = Math.round(value);
+
     this.connection.sendRoot(parameter.getSetValue(value));
   }
 

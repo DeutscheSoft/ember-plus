@@ -305,6 +305,10 @@ export class RootNode extends InternalNode {
   }
 }
 
+function isNotFloat(x) {
+  return x === void 0 || Number.isInteger(x);
+}
+
 /**
  * Tree node representing ember parameter nodes.
  */
@@ -443,6 +447,36 @@ export class Parameter extends TreeNode {
    */
   get type() {
     return this._type;
+  }
+
+  guessType() {
+    let type = this._type;
+
+    // nothing to guess
+    if (type !== void 0) return type;
+
+    const value = this.value;
+
+    switch (typeof value) {
+      case 'string':
+        return 'string';
+      case 'boolean':
+        return 'boolean';
+      case 'number':
+        if (Number.isInteger(value)) {
+          if (typeof this._enumeration === 'string') return 'enum';
+
+          if (isNotFloat(this._minimum) && isNotFloat(this._maximum))
+            return 'integer';
+        }
+        return 'real';
+      case 'object':
+        if (value instanceof Uint8Array) {
+          return 'octets';
+        }
+    }
+
+    return void 0;
   }
 
   /**
