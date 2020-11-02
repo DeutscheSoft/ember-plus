@@ -9,7 +9,7 @@ import {
   emberRoot,
   emberRootElementCollection,
 } from './types.js';
-import { TLV } from '../ber.js';
+import { TLV } from '../ber/tlv.js';
 
 function toQualifiedNode(node) {
   if (node instanceof emberQualifiedNode) {
