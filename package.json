@@ -1,7 +1,7 @@
 {
   "name": "ember-plus",
   "version": "1.0.0",
-  "description": "",
+  "description": "An Ember+ client library written in JavaScript.",
   "module": "src/index.js",
   "browser": {
     "./dist/index.esm.js": "./src/index.browser.esm.js"
@@ -9,14 +9,15 @@
   "bin": {
     "printDevice": "bin/printDevice.js"
   },
+  "repository": "https://github.com/DeutscheSoft/ember-plus.git",
   "type": "module",
-  "scripts": { 
+  "scripts": {
     "prettier": "cd prettier && npm run prettier",
     "build": "./node_modules/.bin/rollup -c rollup.config.js",
     "eslint": "./eslint/node_modules/.bin/eslint .",
     "esdoc": "cd esdoc && ./node_modules/.bin/esdoc -c .esdoc.json"
   },
-  "sideEffects": [ ],
+  "sideEffects": [],
   "author": "Arne Goedeke <arne@deuso.de>",
   "license": "GPL-2.0-only"
 }
