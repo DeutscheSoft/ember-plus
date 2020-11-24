@@ -321,12 +321,12 @@ export class Connection {
   }
 
   teardown(err) {
-    this.clearKeepaliveInterval();
     this.close();
   }
 
   close() {
     this._frameDecoder = null;
+    this.clearKeepaliveInterval();
   }
 
   isClosed() {
