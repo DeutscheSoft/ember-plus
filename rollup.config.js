@@ -1,10 +1,9 @@
 export default [
   {
-    input: 'src/index.browser.esm.js',
+    input: 'src/bundle.browser.js',
     output: {
       file: 'dist/ember-plus.browser.js',
-      format: 'umd',
-      name: 'EmberPlus',
+      format: 'iife',
     }
   },
   {
