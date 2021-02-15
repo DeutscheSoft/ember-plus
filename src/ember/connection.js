@@ -81,6 +81,7 @@ export class Connection {
     this.batch = 5;
     this._onRootElements = null;
     this._txTime = this.now();
+    this._rxTime = this.now();
     this._keepAliveID = -1;
   }
 
@@ -101,6 +102,8 @@ export class Connection {
     this.clearKeepaliveInterval();
     this._keepAliveID = setInterval(() => {
       this._triggerKeepalive(time);
+      if (this._txTime - this._rxTime > 2 * time)
+        this.close();
     }, time / 2);
   }
 
@@ -218,6 +221,7 @@ export class Connection {
   }
 
   receive(buf) {
+    this._rxTime = this.now();
     this._frameDecoder.feed(buf);
 
     for (;;) {
