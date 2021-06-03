@@ -164,6 +164,9 @@ export class InternalNode extends TreeNode {
    * Device when the list of children has been received.
    */
   get children() {
+    if (this._children === null) {
+      this._children = Array.from(this._childrenByNumber.values());
+    }
     return this._children;
   }
 
@@ -183,36 +186,39 @@ export class InternalNode extends TreeNode {
   /** @internal */
   constructor(parent, number, identifier) {
     super(parent, number, identifier);
-    this._children = [];
+    this._children = null;
     this._childrenReceived = false;
+    this._childrenByNumber = new Map();
   }
 
   /** @internal */
   addChild(child) {
-    const children = this._children;
-    const index = child.number - 1;
+    const childrenByNumber = this._childrenByNumber;
+    const number = child.number;
+    const previous = childrenByNumber.get(number);
 
-    const previous = children[index];
-
-    children[index] = child;
+    childrenByNumber.set(number, child);
+    this._children = null;
 
     return previous;
   }
 
   /** @internal */
   removeChild(child) {
-    const children = this._children;
-    const index = child.number - 1;
-    const previous = children[index];
+    const childrenByNumber = this._childrenByNumber;
+    const number = child.number;
+    const previous = childrenByNumber.get(number);
 
     if (previous !== child) throw new Error('Removing wrong child.');
 
-    children[index] = void 0;
+    childrenByNumber.delete(number);
+    this._children = null;
   }
 
   /** @internal */
   removeAllChildren() {
-    this._children.length = 0;
+    this._childenByNumber.clear();
+    this._children = null;
   }
 }
 
