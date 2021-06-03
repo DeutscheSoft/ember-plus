@@ -450,7 +450,7 @@ export class Parameter extends TreeNode {
   }
 
   guessType() {
-    let type = this._type;
+    const type = this._type;
 
     // nothing to guess
     if (type !== void 0) return type;

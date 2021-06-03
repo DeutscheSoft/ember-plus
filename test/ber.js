@@ -1,3 +1,5 @@
+/* global BigInt */
+
 import { TLV } from '../src/ber/tlv.js';
 import { someFloats } from './float64.js';
 import { assert_equal } from './helpers.js';
@@ -36,7 +38,7 @@ export function testBer() {
   test_tlv_encode_decode(TLV.INTEGER(0xffffffff));
 
   if (typeof BigInt !== 'undefined') {
-    test_tlv_encode_decode(TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * 2n));
+    test_tlv_encode_decode(TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * BigInt(2)));
   }
 
   for (let i = 0; i < 53; i++) {

@@ -3,7 +3,6 @@ import {
   emberCommand,
   emberElementCollection,
   emberNode,
-  emberParameter,
   emberQualifiedNode,
   emberQualifiedParameter,
   emberRoot,
@@ -254,7 +253,7 @@ export class Connection {
       if (command !== 0) throw new Error('Unsupported command type.');
 
       const flags = frame.getUint8(pos++);
-      const dtd = frame.getUint8(pos++);
+      /*const dtd = */frame.getUint8(pos++);
       const app_bytes = frame.getUint8(pos++);
 
       if (app_bytes !== 2) throw new Error('Unexpected number of app bytes.');

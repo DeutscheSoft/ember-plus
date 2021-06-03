@@ -145,7 +145,6 @@ export function real_decode(data, pos, length) {
       throw new Error('TYPE_REAL only supports binary encoding.');
 
     const sign = tmp & (1 << 6);
-    const F = (tmp >> 2) & 3;
     let exponent_length = tmp & 3;
 
     if (exponent_length === 3) {
