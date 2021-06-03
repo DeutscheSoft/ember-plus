@@ -80,7 +80,7 @@ const u8_view = new DataView(u8.buffer);
 export function integer_encode_with_length(data, pos, n, length) {
   if (typeof n === 'bigint') {
     if (length < 7) {
-      value = Number(value);
+      n = Number(n);
     } else {
       if (length === 8) {
         data.setBigInt64(pos, n);
@@ -201,6 +201,7 @@ export function integer_decode(data, pos, length) {
         return value >= INT53_MIN && value <= INT53_MAX ? Number(value) : value;
       }
     }
+    // FallThrough
     default: {
       let result = data.getInt32(pos);
 
