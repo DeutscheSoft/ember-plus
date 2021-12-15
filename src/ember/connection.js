@@ -82,6 +82,7 @@ export class Connection {
     this._txTime = this.now();
     this._rxTime = this.now();
     this._keepAliveID = -1;
+    this._keepAliveInterval = -1;
   }
 
   clearKeepaliveInterval() {
@@ -96,14 +97,33 @@ export class Connection {
     if (this.now() - this._txTime >= time) this.sendKeepaliveRequest();
   }
 
+  _checkKeepalive() {
+    const time = this._keepAliveInterval;
+
+    if (!(time > 0))
+      return;
+
+    const now = this.now();
+
+    if (this._txTime - this._rxTime > 2 * time) {
+      this.close(new Error('timeout'));
+    } else if (now - this._txTime >= (time / 2)) {
+      this.sendKeepaliveRequest();
+    }
+  }
+
   setKeepaliveInterval(time) {
-    if (!(time > 0)) throw new TypeError('Expected time interval.');
+    this._keepAliveInterval = time;
     this.clearKeepaliveInterval();
+
+    if (!(time > 0))
+      return;
+
+    this.sendKeepaliveRequest();
+
     this._keepAliveID = setInterval(() => {
-      this._triggerKeepalive(time);
-      if (this._txTime - this._rxTime > 2 * time)
-        this.close();
-    }, time / 2);
+      this._checkKeepalive(time);
+    }, time * 0.75);
   }
 
   write(buf) {
@@ -321,15 +341,17 @@ export class Connection {
           throw new Error('Unexpected flags value.');
       }
     }
+
+    this._checkKeepalive();
   }
 
-  teardown(err) {
-    this.close();
-  }
-
-  close() {
+  teardown() {
     this._frameDecoder = null;
     this.clearKeepaliveInterval();
+  }
+
+  close(error) {
+    this.teardown();
   }
 
   isClosed() {

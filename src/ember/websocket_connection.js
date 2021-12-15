@@ -19,22 +19,23 @@ export class WebSocketConnection extends Connection {
     super();
     this.ws = ws;
     this._onerror = (err) => {
-      this.teardown(err);
+      this.teardown();
     };
     this._onclose = () => {
-      this.close();
+      this.teardown();
     };
-    ws.binaryType = 'arraybuffer';
-    ws.addEventListener('error', this._onerror);
-    ws.addEventListener('close', this._onclose);
-    ws.addEventListener('message', (ev) => {
+    this._onmessage = (ev) => {
       try {
         this.receive(ev.data);
       } catch (err) {
         console.warn('Protocol error:', err);
-        this.teardown(err);
+        this.close(err);
       }
-    });
+    };
+    ws.binaryType = 'arraybuffer';
+    ws.addEventListener('error', this._onerror);
+    ws.addEventListener('close', this._onclose);
+    ws.addEventListener('message', this._onmessage);
   }
 
   /** @internal */
@@ -43,17 +44,38 @@ export class WebSocketConnection extends Connection {
     this.ws.send(buffer);
   }
 
+  teardown() {
+    super.teardown();
+
+    const ws = this.ws;
+
+    if (!ws) return;
+
+    try {
+      ws.removeEventListener('error', this._onerror);
+      ws.removeEventListener('close', this._onclose);
+      ws.removeEventListener('message', this._onmessage);
+      ws.close();
+    } catch (err) {
+      console.warn(err);
+    }
+    this.ws = null;
+  }
+
   /**
    * Close this connection.
    */
-  close() {
-    super.close();
-    try {
-      this.ws.removeEventListener('error', this._onerror);
-      this.ws.removeEventListener('close', this._onclose);
-      this.ws.close();
-    } catch (err) {
-      console.warn(err);
+  close(error) {
+    const ws = this.ws;
+
+    super.close(error);
+
+    if (error && ws) {
+      try {
+        ws.dispatchEvent(new CustomEvent('error', { detail: error }));
+      } catch (err) {
+        console.warn(err);
+      }
     }
   }
 

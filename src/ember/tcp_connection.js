@@ -15,7 +15,7 @@ export class TCPConnection extends Connection {
     this.socket = socket;
     socket.on('close', () => {
       if (this.isClosed()) return;
-      this.close();
+      this.teardown();
     });
     socket.on('data', (data) => {
       if (this.isClosed()) return;
@@ -23,7 +23,7 @@ export class TCPConnection extends Connection {
         this.receive(data.buffer);
       } catch (err) {
         console.warn('Protocol error:', err);
-        this.teardown(err);
+        this.close(err);
       }
     });
   }
@@ -38,14 +38,18 @@ export class TCPConnection extends Connection {
     this.socket.write(new Uint8Array(buffer));
   }
 
-  /**
-   * Close this connection.
-   */
-  close() {
-    super.close();
+  teardown() {
+    super.teardown();
+
+    const socket = this.socket;
+
+    if (socket === null) return;
+
     try {
-      this.socket.destroy();
-    } catch (err) {}
+      socket.destroy();
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   /**
