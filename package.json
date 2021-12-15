@@ -1,6 +1,6 @@
 {
   "name": "ember-plus",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "An Ember+ client library written in JavaScript.",
   "module": "src/index.js",
   "browser": {
