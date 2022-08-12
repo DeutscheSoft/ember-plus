@@ -100,14 +100,13 @@ export class Connection {
   _checkKeepalive() {
     const time = this._keepAliveInterval;
 
-    if (!(time > 0))
-      return;
+    if (!(time > 0)) return;
 
     const now = this.now();
 
     if (this._txTime - this._rxTime > 2 * time) {
       this.close(new Error('timeout'));
-    } else if (now - this._txTime >= (time / 2)) {
+    } else if (now - this._txTime >= time / 2) {
       this.sendKeepaliveRequest();
     }
   }
@@ -116,8 +115,7 @@ export class Connection {
     this._keepAliveInterval = time;
     this.clearKeepaliveInterval();
 
-    if (!(time > 0))
-      return;
+    if (!(time > 0)) return;
 
     this.sendKeepaliveRequest();
 
@@ -273,7 +271,7 @@ export class Connection {
       if (command !== 0) throw new Error('Unsupported command type.');
 
       const flags = frame.getUint8(pos++);
-      /*const dtd = */frame.getUint8(pos++);
+      /*const dtd = */ frame.getUint8(pos++);
       const app_bytes = frame.getUint8(pos++);
 
       if (app_bytes !== 2) throw new Error('Unexpected number of app bytes.');

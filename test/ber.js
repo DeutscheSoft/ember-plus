@@ -49,7 +49,9 @@ export function testBer() {
   }
 
   if (typeof BigInt !== 'undefined') {
-    test_tlv_encode_decode(TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * BigInt(2)));
+    test_tlv_encode_decode(
+      TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * BigInt(2))
+    );
   }
 
   for (let i = 0; i < 53; i++) {
