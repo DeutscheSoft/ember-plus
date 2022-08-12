@@ -1,6 +1,7 @@
 /* global BigInt */
 
 import { TLV } from '../src/ber/tlv.js';
+import { TYPE_RELATIVE_OID } from '../src/ber/constants.js';
 import { someFloats } from './float64.js';
 import { assert_equal, assert } from './helpers.js';
 import { HAS_BIGINT } from '../src/ber/bigint.js';
@@ -83,4 +84,13 @@ export function testBer() {
   someFloats().forEach((f) => {
     test_tlv_encode_decode(TLV.REAL(f));
   });
+
+  // relative OIDs
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [1, 2, 3, 4]));
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [127, 2, 3, 4]));
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [128, 2, 3, 4]));
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [129, 2, 3, 4]));
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [0xffff, 2, 3, 4]));
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [0xffffff, 2, 3, 4]));
+  test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [0, 2, 3, 4]));
 }

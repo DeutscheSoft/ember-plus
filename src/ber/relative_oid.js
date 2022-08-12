@@ -21,22 +21,31 @@ export function relative_oid_encoded_length(identifiers) {
 
 export function relative_oid_encode(data, pos, identifiers) {
   for (let i = 0; i < identifiers.length; i++) {
-    let n = identifiers[i];
+    const n = identifiers[i];
 
     if (!(n >= 0))
       throw new TypeError('Relative OID entries need to be non-negative.');
 
-    do {
-      let b = n & 0x7f;
+    const bits = 32 - Math.clz32(n);
+    const bytes = ((bits + 6) / 7) | 0;
 
-      // not last byte
-      if (b !== n) b |= 0x80;
-
-      data.setUint8(pos, b);
-      pos++;
-
-      n >>= 7;
-    } while (n !== 0);
+    switch (bytes) {
+      case 5:
+        data.setUint8(pos++, 0x80 | ((n >>> (4 * 7)) & 0x7f));
+      /* FALLTHROUGH */
+      case 4:
+        data.setUint8(pos++, 0x80 | ((n >>> (3 * 7)) & 0x7f));
+      /* FALLTHROUGH */
+      case 3:
+        data.setUint8(pos++, 0x80 | ((n >>> (2 * 7)) & 0x7f));
+      /* FALLTHROUGH */
+      case 2:
+        data.setUint8(pos++, 0x80 | ((n >>> 7) & 0x7f));
+      /* FALLTHROUGH */
+      case 1:
+      case 0:
+        data.setUint8(pos++, n & 0x7f);
+    }
   }
 
   return pos;
@@ -55,7 +64,7 @@ export function relative_oid_decode(data, pos, length) {
       identifiers.push(acc);
       acc = 0;
     } else {
-      if (i === length - 1) throw Error('Unterminated relative OID');
+      if (i === length - 1) throw Error('Unterminated relative OID.');
     }
   }
   return identifiers;
