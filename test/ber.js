@@ -2,14 +2,18 @@
 
 import { TLV } from '../src/ber/tlv.js';
 import { someFloats } from './float64.js';
-import { assert_equal } from './helpers.js';
+import { assert_equal, assert } from './helpers.js';
 
-function test_tlv_encode_decode(a) {
+function test_tlv_encode_decode(a, cmp) {
   const buf = a.encode();
   const b = TLV.decode_from(new DataView(buf), 0)[0];
   const buf2 = b.encode();
 
-  assert_equal(a.value, b.value);
+  if (cmp) {
+    assert(cmp(a.value, b.value));
+  } else {
+    assert_equal(a.value, b.value);
+  }
 
   assert_equal(buf, buf2);
 }
@@ -36,6 +40,11 @@ export function testBer() {
   test_tlv_encode_decode(TLV.INTEGER(-0xffffff));
   test_tlv_encode_decode(TLV.INTEGER(-0xffffffff));
   test_tlv_encode_decode(TLV.INTEGER(0xffffffff));
+
+
+  test_tlv_encode_decode(TLV.INTEGER(1n), (a, b) => {
+    return Number(a) === Number(b);
+  });
 
   if (typeof BigInt !== 'undefined') {
     test_tlv_encode_decode(TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * BigInt(2)));

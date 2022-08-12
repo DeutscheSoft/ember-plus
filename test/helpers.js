@@ -37,6 +37,14 @@ export function assert_equal(b1, b2) {
   }
 }
 
+export function assert(condition, msg) {
+  if (!condition) {
+    throw new Error(msg || 'assert failed.');
+  } else {
+    ok++;
+  }
+}
+
 export function report() {
   console.log('%d OK', ok);
 }

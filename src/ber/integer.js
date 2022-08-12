@@ -26,7 +26,7 @@ import {
 
 export function integer_encoded_length(value) {
   if (typeof value === 'bigint') {
-    if (value >= INT53_MAX && value <= INT53_MAX) {
+    if (value >= INT53_MIN && value <= INT53_MAX) {
       // This BigInt fits into a regular number.
       value = Number(value);
     } else {
