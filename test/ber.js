@@ -3,6 +3,7 @@
 import { TLV } from '../src/ber/tlv.js';
 import { someFloats } from './float64.js';
 import { assert_equal, assert } from './helpers.js';
+import { HAS_BIGINT } from '../src/ber/bigint.js';
 
 function test_tlv_encode_decode(a, cmp) {
   const buf = a.encode();
@@ -41,10 +42,11 @@ export function testBer() {
   test_tlv_encode_decode(TLV.INTEGER(-0xffffffff));
   test_tlv_encode_decode(TLV.INTEGER(0xffffffff));
 
-
-  test_tlv_encode_decode(TLV.INTEGER(1n), (a, b) => {
-    return Number(a) === Number(b);
-  });
+  if (HAS_BIGINT) {
+    test_tlv_encode_decode(TLV.INTEGER(BigInt(1)), (a, b) => {
+      return Number(a) === Number(b);
+    });
+  }
 
   if (typeof BigInt !== 'undefined') {
     test_tlv_encode_decode(TLV.INTEGER(BigInt(Number.MAX_SAFE_INTEGER) * BigInt(2)));
