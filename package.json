@@ -1,5 +1,5 @@
 {
-  "name": "ember-plus",
+  "name": "@deutschesoft/ember-plus",
   "version": "1.0.6",
   "description": "An Ember+ client library written in JavaScript.",
   "module": "src/index.js",
