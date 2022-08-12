@@ -1,0 +1,7 @@
+/esdoc
+/eslint
+/prettier
+/test
+/.eslintignore
+/.eslintrc.cjs
+/rollup.config.js
