@@ -5,6 +5,7 @@ import { TYPE_RELATIVE_OID } from '../src/ber/constants.js';
 import { someFloats } from './float64.js';
 import { assert_equal, assert } from './helpers.js';
 import { HAS_BIGINT } from '../src/ber/bigint.js';
+import { join_float64, split_float64 } from '../src/ber/real.js';
 
 function test_tlv_encode_decode(a, cmp) {
   const buf = a.encode();
@@ -29,6 +30,11 @@ export function test_ber_encode_decode(a) {
   const buf2 = tlv.encode();
 
   assert_equal(buf, buf2);
+}
+
+function test_float_split(v, [sign, exponent, mantissa]) {
+  assert_equal(join_float64(sign, exponent, mantissa), v);
+  assert_equal(join_float64(sign, exponent, mantissa), v);
 }
 
 export function testBer() {
@@ -73,17 +79,38 @@ export function testBer() {
 
   test_tlv_encode_decode(TLV.OCTETSTRING(new Uint8Array(13)));
 
+  test_float_split(0.5, [0, -1, 1]);
+  test_float_split(-0.5, [1, -1, 1]);
+  test_float_split(2, [0, 1, 1]);
+  test_float_split(Math.pow(2, 10), [0, 10, 1]);
+  test_float_split(Math.pow(2, -10), [0, -10, 1]);
+
+  // test subnormal float
+  test_float_split(Number.MIN_VALUE, [0, -1074, 1]);
+
+  // test 2^-52
+  test_float_split(Number.EPSILON, [0, -52, 1]);
+
   // special floating point values
-  test_tlv_encode_decode(TLV.REAL(Math.PI));
   test_tlv_encode_decode(TLV.REAL(NaN));
   test_tlv_encode_decode(TLV.REAL(0.0));
   test_tlv_encode_decode(TLV.REAL(-0.0));
   test_tlv_encode_decode(TLV.REAL(Infinity));
   test_tlv_encode_decode(TLV.REAL(-Infinity));
 
+  test_tlv_encode_decode(TLV.REAL(Math.PI));
+  test_tlv_encode_decode(TLV.REAL(Number.MIN_VALUE));
+  test_tlv_encode_decode(TLV.REAL(Number.EPSILON));
+
   someFloats().forEach((f) => {
     test_tlv_encode_decode(TLV.REAL(f));
   });
+
+  test_tlv_encode_decode(TLV.REAL(join_float64([0, 0, 0xff])));
+  test_tlv_encode_decode(TLV.REAL(join_float64([0, 0, 0x1ff])));
+  test_tlv_encode_decode(TLV.REAL(join_float64([0, 0, 0xffff])));
+  test_tlv_encode_decode(TLV.REAL(join_float64([0, 0, 0xffffff])));
+  test_tlv_encode_decode(TLV.REAL(join_float64([0, 0, 0xffffffff])));
 
   // relative OIDs
   test_tlv_encode_decode(TLV.UNIVERSAL(TYPE_RELATIVE_OID, [1, 2, 3, 4]));
