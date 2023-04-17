@@ -5,7 +5,7 @@ import { TYPE_RELATIVE_OID } from '../src/ber/constants.js';
 import { someFloats } from './float64.js';
 import { assert_equal, assert } from './helpers.js';
 import { HAS_BIGINT } from '../src/ber/bigint.js';
-import { join_float64, split_float64 } from '../src/ber/real.js';
+import { join_float64 } from '../src/ber/real.js';
 
 function test_tlv_encode_decode(a, cmp) {
   const buf = a.encode();
